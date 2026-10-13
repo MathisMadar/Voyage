@@ -1,4 +1,4 @@
-# Nos lieux
+# Voyage
 
 App web partagée entre deux personnes pour lister les endroits du monde qu'on veut visiter ensemble (villes, pays, sites naturels, monuments). Les deux voient la même carte en temps réel.
 
@@ -6,13 +6,13 @@ App web partagée entre deux personnes pour lister les endroits du monde qu'on v
 HTML, CSS et JavaScript sans framework ni build. Firebase Realtime Database pour la synchro (SDK modulaire v10 chargé depuis gstatic). Leaflet 1.9.4 avec les tuiles OpenStreetMap pour la carte. Nominatim (OpenStreetMap) pour la recherche et pour trouver la ville la plus proche d'un point touché. PWA installable sur iPhone. Déploiement prévu sur GitHub Pages.
 
 ## Fichiers
-`index.html` structure de la page. `style.css` styles, couleurs dans les variables `:root`. `app.js` toute la logique (module ES). `firebase-config.js` config Firebase, identifiant secret de l'espace et prénoms des deux personnes. `manifest.json` et `sw.js` pour la PWA. `icons/` icônes.
+`index.html` structure de la page. `style.css` styles, couleurs dans les variables `:root`. `app.js` toute la logique (module ES). `firebase-config.js` config Firebase et prénoms des deux personnes (Mathis et Clara). `manifest.json` et `sw.js` pour la PWA. `icons/` icônes.
 
 ## Données
-Pas d'authentification : un identifiant secret dans le chemin sert de protection.
+Pas d'authentification : un identifiant secret dans le chemin sert de protection. Le dépôt GitHub étant public, cet identifiant n'est jamais dans le code : il arrive par le lien (`…/voyage/#identifiant`) ou est collé à l'écran au premier lancement, puis gardé dans le localStorage (`voyage-espace`).
 Chemin : `espaces/<ESPACE_ID>/lieux/<id>` avec les champs `nom`, `pays`, `categorie` (ville, pays, nature, plage, monument, autre), `note`, `lat`, `lng`, `visite` (booléen), `dateVisite` (format AAAA-MM), `coeurs` ({A: true, B: true}), `ajoutePar` (A ou B), `creeLe` (timestamp serveur).
 Les cœurs sont écrits séparément du reste de la fiche pour ne pas écraser celui de l'autre personne.
-La personne courante (A ou B) est gardée dans le localStorage de l'appareil.
+La personne courante (A ou B) est gardée dans le localStorage de l'appareil (`voyage-moi`).
 
 Règles Realtime Database conseillées :
 ```json

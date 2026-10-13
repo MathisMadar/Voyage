@@ -2,7 +2,41 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getDatabase, ref, push, update, remove, set, onValue, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { firebaseConfig, ESPACE_ID, PERSONNES } from "./firebase-config.js";
+import { firebaseConfig, PERSONNES } from "./firebase-config.js";
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Espace secret (arrive par le lien, gardé sur l'appareil) ---------- */
+// Accepte le lien complet ou juste l'identifiant. Firebase interdit . # $ [ ] /
+function extraireEspace(texte) {
+  const id = (texte || "").split("#").pop().trim();
+  return /^[A-Za-z0-9_-]{16,}$/.test(id) ? id : null;
+}
+function lireEspace() {
+  const duLien = extraireEspace(location.hash);
+  try {
+    if (duLien) localStorage.setItem("voyage-espace", duLien);
+    return duLien || localStorage.getItem("voyage-espace");
+  } catch {
+    return duLien;
+  }
+}
+// Sans identifiant (ex. app installée sur iPhone, qui ne partage pas le stockage de Safari),
+// on demande de coller le lien.
+function demanderEspace() {
+  $("choix-espace").hidden = false;
+  return new Promise((resoudre) => {
+    $("espace-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = extraireEspace($("espace-texte").value);
+      if (!id) { $("espace-erreur").hidden = false; return; }
+      try { localStorage.setItem("voyage-espace", id); } catch { /* stockage indisponible */ }
+      $("choix-espace").hidden = true;
+      resoudre(id);
+    });
+  });
+}
+const ESPACE_ID = lireEspace() || await demanderEspace();
 
 /* ---------- Firebase ---------- */
 const db = getDatabase(initializeApp(firebaseConfig));
@@ -19,8 +53,7 @@ const CATEGORIES = {
   autre:    { label: "Autre",          emoji: "📍" },
 };
 
-const $ = (id) => document.getElementById(id);
-let lieux = {};          // { id: lieu } tel que dans Firebase
+let lieux = {};         // { id: lieu } tel que dans Firebase
 let filtre = "avisiter"; // avisiter | visite | tous
 let marqueurs = {};      // { id: L.marker }
 let ficheId = null;      // id du lieu ouvert, null si nouveau
@@ -30,10 +63,10 @@ let moi = lireMoi();
 
 /* ---------- Qui suis-je (gardé sur l'appareil) ---------- */
 function lireMoi() {
-  try { return localStorage.getItem("nos-lieux-moi"); } catch { return null; }
+  try { return localStorage.getItem("voyage-moi"); } catch { return null; }
 }
 function ecrireMoi(v) {
-  try { localStorage.setItem("nos-lieux-moi", v); } catch { /* stockage indisponible */ }
+  try { localStorage.setItem("voyage-moi", v); } catch { /* stockage indisponible */ }
 }
 function choisirMoi() {
   const boite = $("choix-boutons");

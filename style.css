@@ -279,3 +279,13 @@ button { cursor: pointer; border: none; background: none; }
 .boite p { margin: 0 0 16px; font-weight: 600; }
 .choix-boutons { display: flex; gap: 10px; justify-content: center; }
 .choix-boutons .principal { margin: 0; }
+#espace-form { width: min(340px, calc(100vw - 32px)); }
+#espace-texte {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+  background: var(--fond);
+}
+#espace-form .erreur { margin: 8px 0 0; font-weight: 400; color: var(--coeur); }
+#espace-form .principal { margin-top: 14px; }

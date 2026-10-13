@@ -1,6 +1,6 @@
 {
-  "name": "Nos lieux",
-  "short_name": "Nos lieux",
+  "name": "Voyage",
+  "short_name": "Voyage",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#fbf7f2",

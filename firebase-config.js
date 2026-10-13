@@ -10,12 +10,12 @@ export const firebaseConfig = {
   appId: "A_REMPLIR",
 };
 
-// Identifiant secret de votre espace partagé : une longue chaîne au hasard.
-// Les données sont rangées sous espaces/<ESPACE_ID>/lieux.
-export const ESPACE_ID = "change-moi-par-une-longue-chaine-au-hasard";
+// L'identifiant secret de l'espace n'est PAS ici (ce fichier est public sur GitHub).
+// Il arrive par le lien : https://…/voyage/#identifiant-secret
+// puis il est gardé sur l'appareil.
 
 // Les deux personnes qui partagent la carte.
 export const PERSONNES = {
   A: "Mathis",
-  B: "Prénom 2",
+  B: "Clara",
 };

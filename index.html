@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#2f6f5e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Nos lieux">
-  <title>Nos lieux</title>
+  <meta name="apple-mobile-web-app-title" content="Voyage">
+  <title>Voyage</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header class="entete">
-    <h1>Nos lieux</h1>
+    <h1>Voyage</h1>
     <button id="btn-moi" class="puce" title="Changer de personne">?</button>
   </header>
 
@@ -72,6 +72,15 @@
       <button type="submit" class="principal">Enregistrer</button>
     </div>
   </form>
+
+  <div id="choix-espace" class="fond plein" hidden>
+    <form id="espace-form" class="boite" autocomplete="off">
+      <p>Colle le lien secret de votre carte</p>
+      <input id="espace-texte" type="text" placeholder="https://…#…">
+      <p id="espace-erreur" class="erreur" hidden>Ce lien ne semble pas valide</p>
+      <button type="submit" class="principal">Ouvrir</button>
+    </form>
+  </div>
 
   <div id="choix-moi" class="fond plein" hidden>
     <div class="boite">
