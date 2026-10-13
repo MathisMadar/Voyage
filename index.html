@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6f5e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nos lieux">
+  <title>Nos lieux</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="entete">
+    <h1>Nos lieux</h1>
+    <button id="btn-moi" class="puce" title="Changer de personne">?</button>
+  </header>
+
+  <main class="contenu">
+    <div class="zone-carte">
+      <div id="carte"></div>
+      <form id="recherche" class="recherche" autocomplete="off">
+        <input id="recherche-texte" type="search" placeholder="Une ville, un pays, un lieu…">
+      </form>
+      <ul id="resultats" class="resultats" hidden></ul>
+      <p class="astuce">Ou touche la carte pour ajouter un endroit</p>
+    </div>
+
+    <section class="liste">
+      <div class="filtres">
+        <button data-filtre="avisiter" class="actif">À visiter</button>
+        <button data-filtre="visite">Visités</button>
+        <button data-filtre="tous">Tous</button>
+        <button id="btn-hasard" class="hasard" title="Choisir un endroit au hasard">🎲</button>
+      </div>
+      <div id="liste-lieux"></div>
+      <p id="vide" class="vide" hidden>Aucun endroit pour l'instant.</p>
+    </section>
+  </main>
+
+  <div id="fiche-fond" class="fond" hidden></div>
+  <form id="fiche" class="fiche" hidden>
+    <button type="button" id="f-fermer" class="fermer" aria-label="Fermer">✕</button>
+    <input id="f-nom" class="f-nom" placeholder="Nom de l'endroit" required>
+    <p id="f-pays" class="pays"></p>
+
+    <label>Type
+      <select id="f-categorie"></select>
+    </label>
+
+    <label>Notes
+      <textarea id="f-note" rows="4" placeholder="Ce qu'on veut y faire, la meilleure saison, une idée…"></textarea>
+    </label>
+
+    <div class="ligne">
+      <button type="button" id="f-coeur" class="coeur">♡ J'ai envie</button>
+      <span id="f-coeurs-info" class="info"></span>
+    </div>
+
+    <label class="case"><input type="checkbox" id="f-visite"> On y est allés</label>
+    <label id="f-date-bloc" hidden>Quand
+      <input type="month" id="f-date">
+    </label>
+
+    <p id="f-meta" class="meta"></p>
+
+    <div class="actions">
+      <button type="button" id="f-supprimer" class="danger">Supprimer</button>
+      <button type="submit" class="principal">Enregistrer</button>
+    </div>
+  </form>
+
+  <div id="choix-moi" class="fond plein" hidden>
+    <div class="boite">
+      <p>Qui es-tu ?</p>
+      <div id="choix-boutons" class="choix-boutons"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
