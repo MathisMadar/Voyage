@@ -80,6 +80,7 @@ function choisirMoi() {
       ecrireMoi(cle);
       $("choix-moi").hidden = true;
       majMoi();
+      rendre(); // les pastilles « Nouveau » dépendent de qui regarde
     };
     boite.appendChild(b);
   }
@@ -103,7 +104,8 @@ function icone(lieu) {
   const cat = CATEGORIES[lieu.categorie] || CATEGORIES.autre;
   return L.divIcon({
     className: "",
-    html: `<div class="epingle${lieu.visite ? " visite" : ""}"><span>${cat.emoji}</span></div>`,
+    html: `<div class="epingle${lieu.visite ? " visite" : ""}${estNouveau(lieu) ? " nouveau" : ""}">`
+      + `<span>${cat.emoji}</span></div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
   });
@@ -211,6 +213,8 @@ $("recherche").addEventListener("submit", async (e) => {
 
 /* ---------- Affichage ---------- */
 const nbCoeurs = (l) => Object.values(l.coeurs || {}).filter(Boolean).length;
+// Ajouté par l'autre personne et pas encore ouvert par moi
+const estNouveau = (l) => !!l.ajoutePar && l.ajoutePar !== moi && !l.vuPar?.[moi];
 
 function rendre() {
   // Épingles : on enlève celles supprimées, on crée ou met à jour les autres
@@ -257,6 +261,7 @@ function elementLieu(id, l) {
   li.className = "lieu" + (l.visite ? " visite" : "");
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
+    <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
     <span class="lieu-coeurs"></span>`;
   li.querySelector("strong").textContent = l.nom;
   li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
@@ -275,6 +280,8 @@ for (const [cle, c] of Object.entries(CATEGORIES)) {
 
 function ouvrirFiche(id, nouveau) {
   if (id) retirerTemp();
+  // Ouvrir la fiche marque le lieu comme vu (écrit à part, comme les cœurs)
+  if (id && estNouveau(lieux[id])) set(ref(db, `${cheminLieux}/${id}/vuPar/${moi}`), true);
   ficheId = id;
   brouillon = id ? structuredClone(lieux[id]) : nouveau;
   brouillon.coeurs ||= {};

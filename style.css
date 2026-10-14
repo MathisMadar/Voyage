@@ -132,6 +132,17 @@ button { cursor: pointer; border: none; background: none; }
 }
 .epingle span { transform: rotate(45deg); font-size: 17px; }
 .epingle.visite { border-color: var(--doux); opacity: .6; }
+/* Lieu ajouté par l'autre, pas encore ouvert : bord corail et point au sommet */
+.epingle.nouveau { position: relative; border-color: var(--coeur); }
+.epingle.nouveau::after {
+  content: "";
+  position: absolute;
+  top: -5px; right: -5px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--coeur);
+  border: 2px solid var(--surface);
+}
 
 /* ---------- Liste ---------- */
 .filtres {
@@ -180,6 +191,15 @@ button { cursor: pointer; border: none; background: none; }
 }
 .lieu-texte small { color: var(--doux); }
 .lieu-coeurs { color: var(--coeur); }
+.lieu-nouveau {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--coeur);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.lieu-nouveau[hidden] { display: none; }
 
 .vide { color: var(--doux); text-align: center; margin-top: 24px; }
 
