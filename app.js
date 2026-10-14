@@ -366,8 +366,10 @@ $("fiche").addEventListener("submit", async (e) => {
 
 $("f-supprimer").onclick = async () => {
   if (!ficheId || !confirm(`Supprimer « ${brouillon.nom} » ?`)) return;
-  await remove(ref(db, `${cheminLieux}/${ficheId}`));
+  // On ferme d'abord : la synchro ne doit pas croire que c'est l'autre qui a supprimé
+  const id = ficheId;
   fermerFiche();
+  await remove(ref(db, `${cheminLieux}/${id}`));
 };
 
 $("f-fermer").onclick = fermerFiche;
@@ -390,6 +392,13 @@ let premierChargement = true;
 onValue(lieuxRef, (snap) => {
   lieux = snap.val() || {};
   rendre();
+  // L'autre personne a supprimé le lieu dont la fiche est ouverte : on ferme,
+  // sinon « Enregistrer » ou le cœur le recréeraient à moitié.
+  if (ficheId && !lieux[ficheId]) {
+    const nom = brouillon.nom;
+    fermerFiche();
+    alert(`« ${nom} » vient d'être supprimé.`);
+  }
   if (premierChargement) { premierChargement = false; cadrer(); }
 });
 
