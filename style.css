@@ -147,7 +147,6 @@ button { cursor: pointer; border: none; background: none; }
   font-size: .9rem;
 }
 .filtres button.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
-.filtres .hasard { margin-left: auto; }
 
 .liste h2 {
   margin: 16px 0 6px;

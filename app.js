@@ -369,7 +369,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("fiche").hidden) fermerFiche();
 });
 
-/* ---------- Filtres et hasard ---------- */
+/* ---------- Filtres ---------- */
 for (const b of document.querySelectorAll("[data-filtre]")) {
   b.onclick = () => {
     filtre = b.dataset.filtre;
@@ -377,17 +377,6 @@ for (const b of document.querySelectorAll("[data-filtre]")) {
     rendre();
   };
 }
-
-// Tire au sort un endroit pas encore visité, en priorité ceux qui ont deux cœurs
-$("btn-hasard").onclick = () => {
-  const candidats = Object.entries(lieux).filter(([, l]) => !l.visite);
-  if (!candidats.length) return;
-  const tousLesDeux = candidats.filter(([, l]) => nbCoeurs(l) >= 2);
-  const pool = tousLesDeux.length ? tousLesDeux : candidats;
-  const [id, l] = pool[Math.floor(Math.random() * pool.length)];
-  carte.flyTo([l.lat, l.lng], 6);
-  ouvrirFiche(id);
-};
 
 /* ---------- Synchronisation temps réel ---------- */
 let premierChargement = true;
