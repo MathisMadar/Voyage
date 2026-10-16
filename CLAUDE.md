@@ -10,8 +10,8 @@ HTML, CSS et JavaScript sans framework ni build. Firebase Realtime Database pour
 
 ## Données
 Pas d'authentification : un identifiant secret dans le chemin sert de protection. Le dépôt GitHub étant public, cet identifiant n'est jamais dans le code : il arrive par le lien (`…/voyage/#identifiant`) ou est collé à l'écran au premier lancement, puis gardé dans le localStorage (`voyage-espace`).
-Chemin : `espaces/<ESPACE_ID>/lieux/<id>` avec les champs `nom`, `pays`, `categorie` (ville, pays, nature, plage, monument, autre), `note`, `lat`, `lng`, `visite` (booléen), `dateVisite` (format AAAA-MM), `coeurs` ({A: true, B: true}), `vuPar` ({A: true}, qui a ouvert la fiche, sert à la pastille « Nouveau » sur les lieux ajoutés par l'autre), `ajoutePar` (A ou B), `creeLe` (timestamp serveur).
-Les cœurs et `vuPar` sont écrits séparément du reste de la fiche pour ne pas écraser celui de l'autre personne.
+Chemin : `espaces/<ESPACE_ID>/lieux/<id>` avec les champs `nom`, `pays`, `categorie` (ville, pays, nature, plage, monument, autre), `note`, `lat`, `lng`, `visite` (booléen), `dateVisite` (format AAAA-MM), `priorite` (booléen commun aux deux, « on veut y aller en premier », ces lieux passent en tête de liste), `vuPar` ({A: true}, qui a ouvert la fiche, sert à la pastille « Nouveau » sur les lieux ajoutés par l'autre), `ajoutePar` (A ou B), `creeLe` (timestamp serveur).
+`vuPar` est écrit séparément du reste de la fiche pour ne pas écraser celui de l'autre personne. Les anciens `coeurs` ont été remplacés par `priorite` et sont effacés à l'enregistrement d'une fiche.
 La personne courante (A ou B) est gardée dans le localStorage de l'appareil (`voyage-moi`).
 
 Règles Realtime Database conseillées :

@@ -190,7 +190,7 @@ button { cursor: pointer; border: none; background: none; }
   text-overflow: ellipsis;
 }
 .lieu-texte small { color: var(--doux); }
-.lieu-coeurs { color: var(--coeur); }
+.lieu-priorite { font-size: 1rem; }
 .lieu-nouveau {
   padding: 2px 8px;
   border-radius: 999px;
@@ -267,13 +267,6 @@ button { cursor: pointer; border: none; background: none; }
 .fiche textarea { resize: vertical; }
 .fiche label.case { flex-direction: row; align-items: center; gap: 8px; color: var(--texte); }
 
-.ligne { display: flex; align-items: center; gap: 10px; }
-.coeur {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--bord);
-}
-.coeur.actif { border-color: var(--coeur); color: var(--coeur); }
 .info, .meta { color: var(--doux); font-size: .85rem; margin: 0; }
 
 .actions { display: flex; gap: 8px; margin-top: 4px; }

@@ -212,7 +212,6 @@ $("recherche").addEventListener("submit", async (e) => {
 });
 
 /* ---------- Affichage ---------- */
-const nbCoeurs = (l) => Object.values(l.coeurs || {}).filter(Boolean).length;
 // Ajouté par l'autre personne et pas encore ouvert par moi
 const estNouveau = (l) => !!l.ajoutePar && l.ajoutePar !== moi && !l.vuPar?.[moi];
 
@@ -234,7 +233,7 @@ function rendre() {
   // Liste filtrée, groupée par pays
   const visibles = Object.entries(lieux)
     .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
-    .sort(([, a], [, b]) => nbCoeurs(b) - nbCoeurs(a) || a.nom.localeCompare(b.nom, "fr"));
+    .sort(([, a], [, b]) => !!b.priorite - !!a.priorite || a.nom.localeCompare(b.nom, "fr"));
 
   const groupes = {};
   for (const entree of visibles) {
@@ -262,10 +261,9 @@ function elementLieu(id, l) {
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
     <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
-    <span class="lieu-coeurs"></span>`;
+    <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
   li.querySelector("strong").textContent = l.nom;
   li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
-  li.querySelector(".lieu-coeurs").textContent = "♥".repeat(nbCoeurs(l));
   li.onclick = () => {
     carte.flyTo([l.lat, l.lng], Math.max(carte.getZoom(), 6));
     ouvrirFiche(id);
@@ -280,23 +278,22 @@ for (const [cle, c] of Object.entries(CATEGORIES)) {
 
 function ouvrirFiche(id, nouveau) {
   if (id) retirerTemp();
-  // Ouvrir la fiche marque le lieu comme vu (écrit à part, comme les cœurs)
+  // Ouvrir la fiche marque le lieu comme vu (écrit à part pour ne rien écraser)
   if (id && estNouveau(lieux[id])) set(ref(db, `${cheminLieux}/${id}/vuPar/${moi}`), true);
   ficheId = id;
   brouillon = id ? structuredClone(lieux[id]) : nouveau;
-  brouillon.coeurs ||= {};
 
   $("f-nom").value = brouillon.nom || "";
   $("f-pays").textContent = brouillon.pays || "";
   $("f-categorie").value = brouillon.categorie || "autre";
   $("f-note").value = brouillon.note || "";
+  $("f-priorite").checked = !!brouillon.priorite;
   $("f-visite").checked = !!brouillon.visite;
   $("f-date").value = brouillon.dateVisite || "";
   $("f-date-bloc").hidden = !brouillon.visite;
   $("f-supprimer").hidden = !id;
   $("f-meta").textContent = id && brouillon.ajoutePar
     ? `Ajouté par ${PERSONNES[brouillon.ajoutePar] || brouillon.ajoutePar}` : "";
-  majCoeur();
 
   $("fiche").hidden = false;
   $("fiche-fond").hidden = false;
@@ -310,25 +307,6 @@ function fermerFiche() {
   retirerTemp();
 }
 
-function majCoeur() {
-  const mien = !!brouillon.coeurs[moi];
-  $("f-coeur").textContent = mien ? "♥ J'ai envie" : "♡ J'ai envie";
-  $("f-coeur").classList.toggle("actif", mien);
-  const autres = Object.entries(brouillon.coeurs)
-    .filter(([cle, v]) => v && cle !== moi)
-    .map(([cle]) => PERSONNES[cle] || cle);
-  $("f-coeurs-info").textContent = autres.length ? `${autres.join(", ")} aussi` : "";
-}
-
-// Le cœur d'un lieu existant est enregistré tout de suite, à part du reste,
-// pour ne pas écraser celui de l'autre personne.
-$("f-coeur").onclick = () => {
-  const valeur = !brouillon.coeurs[moi];
-  brouillon.coeurs[moi] = valeur;
-  majCoeur();
-  if (ficheId) set(ref(db, `${cheminLieux}/${ficheId}/coeurs/${moi}`), valeur || null);
-};
-
 $("f-visite").onchange = () => {
   $("f-date-bloc").hidden = !$("f-visite").checked;
 };
@@ -340,20 +318,21 @@ $("fiche").addEventListener("submit", async (e) => {
     nom: $("f-nom").value.trim(),
     categorie: $("f-categorie").value,
     note: $("f-note").value.trim(),
+    priorite: $("f-priorite").checked,
     visite,
     dateVisite: visite ? $("f-date").value : "",
   };
   if (!donnees.nom) return;
   try {
     if (ficheId) {
-      await update(ref(db, `${cheminLieux}/${ficheId}`), donnees);
+      // coeurs: null efface les anciens cœurs « J'ai envie », remplacés par la priorité
+      await update(ref(db, `${cheminLieux}/${ficheId}`), { ...donnees, coeurs: null });
     } else {
       await push(lieuxRef, {
         ...donnees,
         lat: brouillon.lat,
         lng: brouillon.lng,
         pays: brouillon.pays || "",
-        coeurs: brouillon.coeurs,
         ajoutePar: moi,
         creeLe: serverTimestamp(),
       });
