@@ -33,7 +33,7 @@ button { cursor: pointer; border: none; background: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px 10px;
 }
 .entete h1 { margin: 0; font-size: 1.3rem; }
 .puce {
