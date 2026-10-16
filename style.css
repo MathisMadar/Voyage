@@ -7,6 +7,11 @@
   --accent: #2f6f5e;
   --coeur: #e8735a;
   --rayon: 14px;
+  /* Saisons : nom du lieu écrit dans cette couleur (contraste ≥ 4,5 sur blanc) */
+  --printemps: #2e8540;
+  --ete: #9a6700;
+  --automne: #b4501f;
+  --hiver: #2563b0;
 }
 
 [hidden] { display: none !important; }
@@ -268,6 +273,27 @@ button { cursor: pointer; border: none; background: none; }
 }
 .fiche textarea { resize: vertical; }
 .fiche label.case { flex-direction: row; align-items: center; gap: 8px; color: var(--texte); }
+
+/* ---------- Saisons ---------- */
+.saison-printemps { --saison: var(--printemps); }
+.saison-ete       { --saison: var(--ete); }
+.saison-automne   { --saison: var(--automne); }
+.saison-hiver     { --saison: var(--hiver); }
+
+.champ { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--doux); }
+.saisons { display: flex; flex-wrap: wrap; gap: 6px; }
+.saisons button {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+  color: var(--saison);
+  font-size: .85rem;
+}
+.saisons button.actif { background: var(--saison); border-color: var(--saison); color: #fff; }
+
+.lieu[class*="saison-"] .lieu-texte strong { color: var(--saison); }
+.legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 4px; font-size: .8rem; }
+.legende span { color: var(--saison); }
 
 .info, .meta { color: var(--doux); font-size: .85rem; margin: 0; }
 

@@ -53,6 +53,14 @@ const CATEGORIES = {
   autre:    { label: "Autre",          emoji: "📍" },
 };
 
+// Saison idéale : une seule par lieu, couleurs dans style.css (--printemps…)
+const SAISONS = {
+  printemps: "🌸 Printemps",
+  ete:       "☀️ Été",
+  automne:   "🍂 Automne",
+  hiver:     "❄️ Hiver",
+};
+
 // Code pays ISO (donné par Nominatim) -> continent
 const CONTINENTS = {
   "Europe": "ad al at ax ba be bg by ch cy cz de dk ee es fi fo fr gb gg gi gr hr hu ie im is it je li lt lu lv mc md me mk mt nl no pl pt ro rs ru se si sj sk sm ua va xk",
@@ -294,7 +302,7 @@ function rendre() {
 function elementLieu(id, l) {
   const cat = CATEGORIES[l.categorie] || CATEGORIES.autre;
   const li = document.createElement("li");
-  li.className = "lieu" + (l.visite ? " visite" : "");
+  li.className = "lieu" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
     <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
@@ -313,6 +321,28 @@ for (const [cle, c] of Object.entries(CATEGORIES)) {
   $("f-categorie").add(new Option(`${c.emoji} ${c.label}`, cle));
 }
 
+// Boutons de saison dans la fiche (toucher à nouveau pour enlever) et légende de la liste
+for (const [cle, label] of Object.entries(SAISONS)) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = `saison-${cle}`;
+  b.dataset.saison = cle;
+  b.textContent = label;
+  b.onclick = () => {
+    brouillon.saison = brouillon.saison === cle ? "" : cle;
+    majSaisons();
+  };
+  $("f-saisons").appendChild(b);
+
+  const s = document.createElement("span");
+  s.className = `saison-${cle}`;
+  s.textContent = label;
+  $("legende").appendChild(s);
+}
+function majSaisons() {
+  for (const b of $("f-saisons").children) b.classList.toggle("actif", b.dataset.saison === brouillon.saison);
+}
+
 function ouvrirFiche(id, nouveau) {
   if (id) retirerTemp();
   // Ouvrir la fiche marque le lieu comme vu (écrit à part pour ne rien écraser)
@@ -325,6 +355,7 @@ function ouvrirFiche(id, nouveau) {
   $("f-categorie").value = brouillon.categorie || "autre";
   $("f-note").value = brouillon.note || "";
   $("f-priorite").checked = !!brouillon.priorite;
+  majSaisons();
   $("f-visite").checked = !!brouillon.visite;
   $("f-date").value = brouillon.dateVisite || "";
   $("f-date-bloc").hidden = !brouillon.visite;
@@ -356,6 +387,7 @@ $("fiche").addEventListener("submit", async (e) => {
     categorie: $("f-categorie").value,
     note: $("f-note").value.trim(),
     priorite: $("f-priorite").checked,
+    saison: brouillon.saison || "",
     visite,
     dateVisite: visite ? $("f-date").value : "",
   };
