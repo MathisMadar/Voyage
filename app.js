@@ -53,6 +53,32 @@ const CATEGORIES = {
   autre:    { label: "Autre",          emoji: "📍" },
 };
 
+// Code pays ISO (donné par Nominatim) -> continent
+const CONTINENTS = {
+  "Europe": "ad al at ax ba be bg by ch cy cz de dk ee es fi fo fr gb gg gi gr hr hu ie im is it je li lt lu lv mc md me mk mt nl no pl pt ro rs ru se si sj sk sm ua va xk",
+  "Asie": "ae af am az bd bh bn bt cc cn cx ge hk id il in io iq ir jo jp kg kh kp kr kw kz la lb lk mm mn mo mv my np om ph pk ps qa sa sg sy th tj tl tm tr tw uz vn ye",
+  "Afrique": "ao bf bi bj bw cd cf cg ci cm cv dj dz eg eh er et ga gh gm gn gq gw ke km lr ls ly ma mg ml mr mu mw mz na ne ng re rw sc sd sh sl sn so ss st sz td tg tn tz ug yt za zm zw",
+  "Amérique du Nord": "ag ai aw bb bl bm bq bs bz ca cr cu cw dm do gd gl gp gt hn ht jm kn ky lc mf mq ms mx ni pa pm pr sv sx tc tt um us vc vg vi",
+  "Amérique du Sud": "ar bo br cl co ec fk gf gs gy pe py sr uy ve",
+  "Océanie": "as au ck fj fm gu ki mh mp nc nf nr nu nz pf pg pn pw sb tk to tv vu wf ws",
+  "Antarctique": "aq bv hm tf",
+};
+const CONTINENT_DU_CODE = {};
+for (const [continent, codes] of Object.entries(CONTINENTS)) {
+  for (const code of codes.split(" ")) CONTINENT_DU_CODE[code] = continent;
+}
+
+function continentDe(l) {
+  // Nominatim renvoie « fr » aussi pour les DOM-TOM : on regarde la position
+  // pour tout ce qui est hors de la France métropolitaine.
+  if (l.codePays === "fr" && !(l.lat > 41 && l.lat < 51.5 && l.lng > -5.5 && l.lng < 10)) {
+    if (l.lng > 130 || l.lng < -100) return "Océanie";
+    if (l.lng < -30) return l.lat < 10 ? "Amérique du Sud" : "Amérique du Nord";
+    return "Afrique";
+  }
+  return CONTINENT_DU_CODE[l.codePays] || "Autres";
+}
+
 let lieux = {};         // { id: lieu } tel que dans Firebase
 let filtre = "avisiter"; // avisiter | visite | tous
 let marqueurs = {};      // { id: L.marker }
@@ -135,6 +161,7 @@ carte.on("click", async (e) => {
   // L'utilisateur a pu fermer la fiche ou en ouvrir une autre entre-temps
   if (!brouillon || ficheId || brouillon.lat !== lat) return;
   brouillon.pays = info.pays;
+  brouillon.codePays = info.code || "";
   $("f-pays").textContent = info.pays;
   if (!$("f-nom").value) $("f-nom").value = info.nom;
 });
@@ -158,9 +185,10 @@ async function lieuProche(lat, lng) {
     return {
       nom: a.city || a.town || a.village || a.state || d.name || "",
       pays: a.country || "",
+      code: a.country_code || "", // vide en pleine mer
     };
   } catch {
-    return { nom: "", pays: "" };
+    return { nom: "", pays: "", code: null }; // null : à réessayer plus tard
   }
 }
 
@@ -201,6 +229,7 @@ $("recherche").addEventListener("submit", async (e) => {
           lat, lng,
           nom: r.name || r.display_name.split(",")[0],
           pays: categorie === "pays" ? "" : (r.address?.country || ""),
+          codePays: r.address?.country_code || "",
           categorie,
         });
       };
@@ -230,26 +259,34 @@ function rendre() {
     }
   }
 
-  // Liste filtrée, groupée par pays
+  // Liste filtrée, groupée par continent puis par pays
   const visibles = Object.entries(lieux)
     .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
     .sort(([, a], [, b]) => !!b.priorite - !!a.priorite || a.nom.localeCompare(b.nom, "fr"));
 
-  const groupes = {};
+  const groupes = {}; // { continent: { pays: [[id, lieu], …] } }
   for (const entree of visibles) {
-    const pays = entree[1].pays || "Autres";
-    (groupes[pays] ||= []).push(entree);
+    const l = entree[1];
+    const pays = l.pays || (l.categorie === "pays" ? l.nom : "Autres");
+    ((groupes[continentDe(l)] ||= {})[pays] ||= []).push(entree);
   }
 
+  // « Autres » toujours à la fin
+  const trier = (cles) => cles.sort((a, b) => (a === "Autres") - (b === "Autres") || a.localeCompare(b, "fr"));
   const conteneur = $("liste-lieux");
   conteneur.innerHTML = "";
-  for (const pays of Object.keys(groupes).sort((a, b) => a.localeCompare(b, "fr"))) {
+  for (const continent of trier(Object.keys(groupes))) {
     const titre = document.createElement("h2");
-    titre.textContent = pays;
+    titre.textContent = continent;
     conteneur.appendChild(titre);
-    const ul = document.createElement("ul");
-    for (const [id, l] of groupes[pays]) ul.appendChild(elementLieu(id, l));
-    conteneur.appendChild(ul);
+    for (const pays of trier(Object.keys(groupes[continent]))) {
+      const sousTitre = document.createElement("h3");
+      sousTitre.textContent = pays;
+      conteneur.appendChild(sousTitre);
+      const ul = document.createElement("ul");
+      for (const [id, l] of groupes[continent][pays]) ul.appendChild(elementLieu(id, l));
+      conteneur.appendChild(ul);
+    }
   }
   $("vide").hidden = visibles.length > 0;
 }
@@ -333,6 +370,7 @@ $("fiche").addEventListener("submit", async (e) => {
         lat: brouillon.lat,
         lng: brouillon.lng,
         pays: brouillon.pays || "",
+        codePays: brouillon.codePays || "",
         ajoutePar: moi,
         creeLe: serverTimestamp(),
       });
@@ -379,7 +417,27 @@ onValue(lieuxRef, (snap) => {
     alert(`« ${nom} » vient d'être supprimé.`);
   }
   if (premierChargement) { premierChargement = false; cadrer(); }
+  completerCodesPays();
 });
+
+// Les lieux ajoutés avant le classement par continent n'ont pas de codePays :
+// on le retrouve un par un, une requête par seconde au plus (règle de Nominatim).
+const dejaEssayes = new Set();
+let completionEnCours = false;
+async function completerCodesPays() {
+  if (completionEnCours) return;
+  completionEnCours = true;
+  for (const [id, l] of Object.entries(lieux)) {
+    if ("codePays" in l || dejaEssayes.has(id)) continue;
+    dejaEssayes.add(id);
+    const { code } = await lieuProche(l.lat, l.lng);
+    // Pas de réponse : on réessaiera au prochain lancement.
+    // Lieu supprimé entre-temps : on n'écrit rien pour ne pas le recréer.
+    if (code !== null && lieux[id]) set(ref(db, `${cheminLieux}/${id}/codePays`), code);
+    await new Promise((ok) => setTimeout(ok, 1100));
+  }
+  completionEnCours = false;
+}
 
 /* ---------- PWA ---------- */
 if ("serviceWorker" in navigator) {

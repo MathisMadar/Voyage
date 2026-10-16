@@ -167,6 +167,8 @@ button { cursor: pointer; border: none; background: none; }
   letter-spacing: .04em;
   color: var(--doux);
 }
+.liste h2:not(:first-child) { margin-top: 24px; }
+.liste h3 { margin: 10px 0 6px; font-size: .95rem; font-weight: 600; }
 .liste ul { margin: 0; padding: 0; list-style: none; }
 
 .lieu {
