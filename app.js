@@ -76,6 +76,13 @@ for (const [continent, codes] of Object.entries(CONTINENTS)) {
   for (const code of codes.split(" ")) CONTINENT_DU_CODE[code] = continent;
 }
 
+// Drapeau emoji à partir du code pays (« ca » -> 🇨🇦), vide si pas de code
+function drapeau(code) {
+  if (!/^[a-z]{2}$/.test(code || "")) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
+const avecDrapeau = (code, texte) => (drapeau(code) ? `${drapeau(code)} ${texte}` : texte);
+
 function continentDe(l) {
   // Nominatim renvoie « fr » aussi pour les DOM-TOM : on regarde la position
   // pour tout ce qui est hors de la France métropolitaine.
@@ -170,7 +177,7 @@ carte.on("click", async (e) => {
   if (!brouillon || ficheId || brouillon.lat !== lat) return;
   brouillon.pays = info.pays;
   brouillon.codePays = info.code || "";
-  $("f-pays").textContent = info.pays;
+  $("f-pays").textContent = info.pays ? avecDrapeau(info.code, info.pays) : "";
   if (!$("f-nom").value) $("f-nom").value = info.nom;
 });
 
@@ -309,7 +316,8 @@ function remplirGroupes(conteneur, entrees) {
     conteneur.appendChild(titre);
     for (const pays of trier(Object.keys(groupes[continent]))) {
       const sousTitre = document.createElement("h3");
-      sousTitre.textContent = pays;
+      const [, premier] = groupes[continent][pays][0]; // même pays, donc même code
+      sousTitre.textContent = pays === "Autres" ? pays : avecDrapeau(premier.codePays, pays);
       conteneur.appendChild(sousTitre);
       const ul = document.createElement("ul");
       for (const [id, l] of groupes[continent][pays]) ul.appendChild(elementLieu(id, l));
@@ -370,7 +378,7 @@ function ouvrirFiche(id, nouveau) {
   brouillon = id ? structuredClone(lieux[id]) : nouveau;
 
   $("f-nom").value = brouillon.nom || "";
-  $("f-pays").textContent = brouillon.pays || "";
+  $("f-pays").textContent = brouillon.pays ? avecDrapeau(brouillon.codePays, brouillon.pays) : "";
   $("f-categorie").value = brouillon.categorie || "autre";
   $("f-note").value = brouillon.note || "";
   $("f-priorite").checked = !!brouillon.priorite;
