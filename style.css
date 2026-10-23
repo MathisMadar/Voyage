@@ -174,6 +174,17 @@ button { cursor: pointer; border: none; background: none; }
 }
 .liste h2:not(:first-child) { margin-top: 24px; }
 .liste h3 { margin: 10px 0 6px; font-size: .95rem; font-weight: 600; }
+/* Vue « Tous » : sections À visiter / Visités */
+.liste .section {
+  margin: 8px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.liste .section:not(:first-child) { margin-top: 36px; }
+.liste .section + h2 { margin-top: 12px; }
 .liste ul { margin: 0; padding: 0; list-style: none; }
 
 .lieu {

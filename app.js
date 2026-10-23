@@ -272,8 +272,30 @@ function rendre() {
     .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
     .sort(([, a], [, b]) => !!b.priorite - !!a.priorite || a.nom.localeCompare(b.nom, "fr"));
 
+  const conteneur = $("liste-lieux");
+  conteneur.innerHTML = "";
+  if (filtre === "tous") {
+    // Deux sections l'une sous l'autre ; une section vide n'est pas affichée
+    const sections = [["À visiter", visibles.filter(([, l]) => !l.visite)],
+                      ["Visités", visibles.filter(([, l]) => l.visite)]];
+    for (const [nom, entrees] of sections) {
+      if (!entrees.length) continue;
+      const titre = document.createElement("p");
+      titre.className = "section";
+      titre.textContent = `${nom} · ${entrees.length}`;
+      conteneur.appendChild(titre);
+      remplirGroupes(conteneur, entrees);
+    }
+  } else {
+    remplirGroupes(conteneur, visibles);
+  }
+  $("vide").hidden = visibles.length > 0;
+}
+
+// Ajoute les lieux groupés par continent puis par pays
+function remplirGroupes(conteneur, entrees) {
   const groupes = {}; // { continent: { pays: [[id, lieu], …] } }
-  for (const entree of visibles) {
+  for (const entree of entrees) {
     const l = entree[1];
     const pays = l.pays || (l.categorie === "pays" ? l.nom : "Autres");
     ((groupes[continentDe(l)] ||= {})[pays] ||= []).push(entree);
@@ -281,8 +303,6 @@ function rendre() {
 
   // « Autres » toujours à la fin
   const trier = (cles) => cles.sort((a, b) => (a === "Autres") - (b === "Autres") || a.localeCompare(b, "fr"));
-  const conteneur = $("liste-lieux");
-  conteneur.innerHTML = "";
   for (const continent of trier(Object.keys(groupes))) {
     const titre = document.createElement("h2");
     titre.textContent = continent;
@@ -296,7 +316,6 @@ function rendre() {
       conteneur.appendChild(ul);
     }
   }
-  $("vide").hidden = visibles.length > 0;
 }
 
 function elementLieu(id, l) {
