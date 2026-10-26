@@ -193,6 +193,16 @@ async function chercher(texte) {
   return r.json();
 }
 
+// Nom plus court que celui de Nominatim :
+// « Arrondissement de Chicoutimi » -> « Chicoutimi », « Montréal (région administrative) » -> « Montréal »
+function nettoyerNom(nom) {
+  const court = (nom || "")
+    .replace(/^(arrondissement|municipalité|ville|commune|canton|paroisse)\s+(du |des |de |d'|d’)/i, "")
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .trim();
+  return court || nom || "";
+}
+
 async function lieuProche(lat, lng) {
   try {
     // zoom=10 : niveau ville, pas adresse
@@ -201,7 +211,7 @@ async function lieuProche(lat, lng) {
     const d = await r.json();
     const a = d.address || {};
     return {
-      nom: a.city || a.town || a.village || a.state || d.name || "",
+      nom: nettoyerNom(a.city || a.town || a.village || a.state || d.name || ""),
       pays: a.country || "",
       code: a.country_code || "", // vide en pleine mer
     };
@@ -245,7 +255,7 @@ $("recherche").addEventListener("submit", async (e) => {
         montrerTemp(lat, lng);
         ouvrirFiche(null, {
           lat, lng,
-          nom: r.name || r.display_name.split(",")[0],
+          nom: nettoyerNom(r.name || r.display_name.split(",")[0]),
           pays: categorie === "pays" ? "" : (r.address?.country || ""),
           codePays: r.address?.country_code || "",
           categorie,

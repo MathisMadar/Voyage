@@ -1,7 +1,7 @@
 // Service worker minimal : permet l'installation en PWA.
 // Réseau d'abord pour les fichiers de l'app, cache en secours si hors ligne.
 // Firebase, la carte et la recherche passent directement par le réseau.
-const CACHE = "voyage-v14";
+const CACHE = "voyage-v15";
 const FICHIERS = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.json"];
 
 self.addEventListener("install", (e) => {
