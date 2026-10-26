@@ -42,6 +42,8 @@ const ESPACE_ID = lireEspace() || await demanderEspace();
 const db = getDatabase(initializeApp(firebaseConfig));
 const cheminLieux = `espaces/${ESPACE_ID}/lieux`;
 const lieuxRef = ref(db, cheminLieux);
+// Avis « Clara n'a pas retenu Kyoto » destinés à la personne qui avait proposé
+const cheminAvis = `espaces/${ESPACE_ID}/avis`;
 
 /* ---------- Données de l'app ---------- */
 const CATEGORIES = {
@@ -97,6 +99,7 @@ function continentDe(l) {
 let lieux = {};         // { id: lieu } tel que dans Firebase
 let filtre = "avisiter"; // avisiter | visite | tous
 let marqueurs = {};      // { id: L.marker }
+let avis = {};           // { id: { pour, par, nom } } tel que dans Firebase
 let ficheId = null;      // id du lieu ouvert, null si nouveau
 let brouillon = null;    // copie du lieu en cours d'édition
 let marqueurTemp = null; // épingle provisoire pendant un ajout
@@ -145,7 +148,7 @@ function icone(lieu) {
   const cat = CATEGORIES[lieu.categorie] || CATEGORIES.autre;
   return L.divIcon({
     className: "",
-    html: `<div class="epingle${lieu.visite ? " visite" : ""}${estNouveau(lieu) ? " nouveau" : ""}">`
+    html: `<div class="epingle${lieu.visite ? " visite" : ""}${enAttente(lieu) ? " attente" : ""}">`
       + `<span>${cat.emoji}</span></div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
@@ -161,7 +164,7 @@ function retirerTemp() {
 }
 
 function cadrer() {
-  const points = Object.values(lieux).map((l) => [l.lat, l.lng]);
+  const points = Object.values(lieux).filter((l) => !aDecider(l)).map((l) => [l.lat, l.lng]);
   if (points.length === 1) carte.setView(points[0], 6);
   else if (points.length > 1) carte.fitBounds(points, { padding: [40, 40], maxZoom: 6 });
 }
@@ -256,15 +259,18 @@ $("recherche").addEventListener("submit", async (e) => {
 });
 
 /* ---------- Affichage ---------- */
-// Ajouté par l'autre personne et pas encore ouvert par moi
-const estNouveau = (l) => !!l.ajoutePar && l.ajoutePar !== moi && !l.vuPar?.[moi];
+// Un lieu ajouté reste « proposé » tant que l'autre ne l'a pas accepté
+const aDecider = (l) => !!l.propose && l.ajoutePar !== moi;  // l'autre me le propose : caché, bannière
+const enAttente = (l) => !!l.propose && l.ajoutePar === moi; // je l'ai proposé : visible, « en attente »
+const autre = () => PERSONNES[moi === "A" ? "B" : "A"];
 
 function rendre() {
   // Épingles : on enlève celles supprimées, on crée ou met à jour les autres
+  const mesLieux = Object.entries(lieux).filter(([, l]) => !aDecider(l));
   for (const id of Object.keys(marqueurs)) {
-    if (!lieux[id]) { marqueurs[id].remove(); delete marqueurs[id]; }
+    if (!lieux[id] || aDecider(lieux[id])) { marqueurs[id].remove(); delete marqueurs[id]; }
   }
-  for (const [id, l] of Object.entries(lieux)) {
+  for (const [id, l] of mesLieux) {
     if (marqueurs[id]) {
       marqueurs[id].setLatLng([l.lat, l.lng]).setIcon(icone(l));
     } else {
@@ -275,7 +281,7 @@ function rendre() {
   }
 
   // Liste filtrée, groupée par continent puis par pays
-  const visibles = Object.entries(lieux)
+  const visibles = mesLieux
     .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
     .sort(([, a], [, b]) => !!b.priorite - !!a.priorite || a.nom.localeCompare(b.nom, "fr"));
 
@@ -297,6 +303,7 @@ function rendre() {
     remplirGroupes(conteneur, visibles);
   }
   $("vide").hidden = visibles.length > 0;
+  majBanniere();
 }
 
 // Ajoute les lieux groupés par continent puis par pays
@@ -341,9 +348,10 @@ function titrePays(id, l) {
   h3.className = "titre-pays" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   h3.innerHTML = `<span class="titre-nom"></span>
     <span>${CATEGORIES.pays.emoji}</span>
-    <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
+    <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
     <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
   h3.querySelector(".titre-nom").textContent = avecDrapeau(l.codePays, l.nom);
+  h3.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   h3.onclick = () => {
     carte.flyTo([l.lat, l.lng], Math.max(carte.getZoom(), 4)); // un pays : on zoome moins qu'une ville
     ouvrirFiche(id);
@@ -357,9 +365,10 @@ function elementLieu(id, l) {
   li.className = "lieu" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
-    <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
+    <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
     <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
   li.querySelector("strong").textContent = l.nom;
+  li.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
   li.onclick = () => {
     carte.flyTo([l.lat, l.lng], Math.max(carte.getZoom(), 6));
@@ -397,8 +406,6 @@ function majSaisons() {
 
 function ouvrirFiche(id, nouveau) {
   if (id) retirerTemp();
-  // Ouvrir la fiche marque le lieu comme vu (écrit à part pour ne rien écraser)
-  if (id && estNouveau(lieux[id])) set(ref(db, `${cheminLieux}/${id}/vuPar/${moi}`), true);
   ficheId = id;
   brouillon = id ? structuredClone(lieux[id]) : nouveau;
 
@@ -446,8 +453,8 @@ $("fiche").addEventListener("submit", async (e) => {
   if (!donnees.nom) return;
   try {
     if (ficheId) {
-      // coeurs: null efface les anciens cœurs « J'ai envie », remplacés par la priorité
-      await update(ref(db, `${cheminLieux}/${ficheId}`), { ...donnees, coeurs: null });
+      // Efface les anciens champs : cœurs (remplacés par la priorité) et vuPar (remplacé par la bannière)
+      await update(ref(db, `${cheminLieux}/${ficheId}`), { ...donnees, coeurs: null, vuPar: null });
     } else {
       await push(lieuxRef, {
         ...donnees,
@@ -456,6 +463,7 @@ $("fiche").addEventListener("submit", async (e) => {
         pays: brouillon.pays || "",
         codePays: brouillon.codePays || "",
         ajoutePar: moi,
+        propose: true, // en attente de l'accord de l'autre
         creeLe: serverTimestamp(),
       });
     }
@@ -488,7 +496,63 @@ for (const b of document.querySelectorAll("[data-filtre]")) {
   };
 }
 
+/* ---------- Bannière : propositions et refus ---------- */
+// Affiche d'abord les refus qui me concernent, puis les lieux que l'autre me propose, un à la fois
+function majBanniere() {
+  const etaitCachee = $("banniere").hidden;
+  afficherBanniere();
+  // La bannière pousse la carte vers le bas : Leaflet doit recalculer sa taille
+  if ($("banniere").hidden !== etaitCachee) carte.invalidateSize();
+}
+function afficherBanniere() {
+  const banniere = $("banniere");
+  const actions = $("banniere-actions");
+  actions.innerHTML = "";
+  const bouton = (texte, classe, action) => {
+    const b = document.createElement("button");
+    b.textContent = texte;
+    b.className = classe;
+    b.onclick = action;
+    actions.appendChild(b);
+  };
+
+  const refus = PERSONNES[moi] && Object.entries(avis).find(([, a]) => a.pour === moi);
+  if (refus) {
+    const [idAvis, a] = refus;
+    $("banniere-texte").textContent = `${PERSONNES[a.par] || a.par} n'a pas retenu ${a.nom}`;
+    bouton("OK", "principal", () => remove(ref(db, `${cheminAvis}/${idAvis}`)));
+    banniere.hidden = false;
+    return;
+  }
+
+  const proposition = PERSONNES[moi] && Object.entries(lieux).find(([, l]) => aDecider(l));
+  if (!proposition) { banniere.hidden = true; return; }
+  const [id, l] = proposition;
+  $("banniere-texte").textContent = `${PERSONNES[l.ajoutePar] || l.ajoutePar} veut visiter ${l.nom} avec toi`;
+  bouton("Voir", "", () => {
+    carte.flyTo([l.lat, l.lng], l.categorie === "pays" ? 4 : 6);
+    ouvrirFiche(id);
+  });
+  bouton("Refuser", "danger", () => {
+    // Suppression du lieu et avis pour l'autre, en une seule écriture
+    const idAvis = push(ref(db, cheminAvis)).key;
+    update(ref(db, `espaces/${ESPACE_ID}`), {
+      [`lieux/${id}`]: null,
+      [`avis/${idAvis}`]: { pour: l.ajoutePar, par: moi, nom: l.nom },
+    });
+  });
+  bouton("Accepter", "principal", () => {
+    if (lieux[id]) set(ref(db, `${cheminLieux}/${id}/propose`), null);
+  });
+  banniere.hidden = false;
+}
+
 /* ---------- Synchronisation temps réel ---------- */
+onValue(ref(db, cheminAvis), (snap) => {
+  avis = snap.val() || {};
+  majBanniere();
+});
+
 let premierChargement = true;
 onValue(lieuxRef, (snap) => {
   lieux = snap.val() || {};

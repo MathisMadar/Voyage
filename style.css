@@ -137,17 +137,8 @@ button { cursor: pointer; border: none; background: none; }
 }
 .epingle span { transform: rotate(45deg); font-size: 17px; }
 .epingle.visite { border-color: var(--doux); opacity: .6; }
-/* Lieu ajouté par l'autre, pas encore ouvert : bord corail et point au sommet */
-.epingle.nouveau { position: relative; border-color: var(--coeur); }
-.epingle.nouveau::after {
-  content: "";
-  position: absolute;
-  top: -5px; right: -5px;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--coeur);
-  border: 2px solid var(--surface);
-}
+/* Lieu que j'ai proposé, en attente de l'accord de l'autre : bord en pointillés */
+.epingle.attente { border-style: dashed; }
 
 /* ---------- Liste ---------- */
 .filtres {
@@ -213,15 +204,31 @@ button { cursor: pointer; border: none; background: none; }
 }
 .lieu-texte small { color: var(--doux); }
 .lieu-priorite { font-size: 1rem; }
-.lieu-nouveau {
+.lieu-attente {
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--coeur);
-  color: #fff;
+  border: 1px dashed var(--doux);
+  color: var(--doux);
   font-size: .75rem;
-  font-weight: 600;
+  white-space: nowrap;
 }
-.lieu-nouveau[hidden] { display: none; }
+
+/* ---------- Bannière : proposition de l'autre ou refus ---------- */
+.banniere {
+  margin: 0 16px 10px;
+  padding: 12px 14px;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 2px solid var(--coeur);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+}
+.banniere p { margin: 0 0 10px; font-weight: 600; }
+.banniere-actions { display: flex; align-items: center; gap: 8px; }
+.banniere-actions button:not(.principal):not(.danger) {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+}
 
 .vide { color: var(--doux); text-align: center; margin-top: 24px; }
 
