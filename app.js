@@ -315,15 +315,40 @@ function remplirGroupes(conteneur, entrees) {
     titre.textContent = continent;
     conteneur.appendChild(titre);
     for (const pays of trier(Object.keys(groupes[continent]))) {
-      const sousTitre = document.createElement("h3");
-      const [, premier] = groupes[continent][pays][0]; // même pays, donc même code
-      sousTitre.textContent = pays === "Autres" ? pays : avecDrapeau(premier.codePays, pays);
-      conteneur.appendChild(sousTitre);
+      const entrees = groupes[continent][pays];
+      // Le pays lui-même a une fiche : il sert de sous-titre, pour ne l'écrire qu'une fois
+      const iPays = entrees.findIndex(([, l]) => l.categorie === "pays" && !l.pays);
+      if (iPays >= 0) {
+        const [idPays, lieuPays] = entrees.splice(iPays, 1)[0];
+        conteneur.appendChild(titrePays(idPays, lieuPays));
+      } else {
+        const sousTitre = document.createElement("h3");
+        const [, premier] = entrees[0]; // même pays, donc même code
+        sousTitre.textContent = pays === "Autres" ? pays : avecDrapeau(premier.codePays, pays);
+        conteneur.appendChild(sousTitre);
+      }
+      if (!entrees.length) continue;
       const ul = document.createElement("ul");
-      for (const [id, l] of groupes[continent][pays]) ul.appendChild(elementLieu(id, l));
+      for (const [id, l] of entrees) ul.appendChild(elementLieu(id, l));
       conteneur.appendChild(ul);
     }
   }
+}
+
+// Sous-titre cliquable pour un pays qui a sa propre fiche : drapeau, nom (couleur de la saison), emoji du type
+function titrePays(id, l) {
+  const h3 = document.createElement("h3");
+  h3.className = "titre-pays" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
+  h3.innerHTML = `<span class="titre-nom"></span>
+    <span>${CATEGORIES.pays.emoji}</span>
+    <span class="lieu-nouveau"${estNouveau(l) ? "" : " hidden"}>Nouveau</span>
+    <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
+  h3.querySelector(".titre-nom").textContent = avecDrapeau(l.codePays, l.nom);
+  h3.onclick = () => {
+    carte.flyTo([l.lat, l.lng], Math.max(carte.getZoom(), 4)); // un pays : on zoome moins qu'une ville
+    ouvrirFiche(id);
+  };
+  return h3;
 }
 
 function elementLieu(id, l) {
