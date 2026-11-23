@@ -274,6 +274,8 @@ $("recherche").addEventListener("submit", async (e) => {
 const aDecider = (l) => !!l.propose && l.ajoutePar !== moi;  // l'autre me le propose : caché, bannière
 const enAttente = (l) => !!l.propose && l.ajoutePar === moi; // je l'ai proposé : visible, « en attente »
 const autre = () => PERSONNES[moi === "A" ? "B" : "A"];
+// Mis en avant en tête de liste : priorité (à visiter) ou coup de cœur (visité)
+const enAvant = (l) => (l.visite ? !!l.coupDeCoeur : !!l.priorite);
 
 function rendre() {
   // Épingles : on enlève celles supprimées, on crée ou met à jour les autres
@@ -294,7 +296,7 @@ function rendre() {
   // Liste filtrée, groupée par continent puis par pays
   const visibles = mesLieux
     .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
-    .sort(([, a], [, b]) => !!b.priorite - !!a.priorite || a.nom.localeCompare(b.nom, "fr"));
+    .sort(([, a], [, b]) => enAvant(b) - enAvant(a) || a.nom.localeCompare(b.nom, "fr"));
 
   const conteneur = $("liste-lieux");
   conteneur.innerHTML = "";
@@ -360,7 +362,7 @@ function titrePays(id, l) {
   h3.innerHTML = `<span class="titre-nom"></span>
     <span>${CATEGORIES.pays.emoji}</span>
     <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
-    <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
+    <span class="lieu-priorite"${enAvant(l) ? "" : " hidden"}>${l.visite ? "❤️" : "⭐"}</span>`;
   h3.querySelector(".titre-nom").textContent = avecDrapeau(l.codePays, l.nom);
   h3.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   h3.onclick = () => {
@@ -377,7 +379,7 @@ function elementLieu(id, l) {
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
     <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
-    <span class="lieu-priorite"${l.priorite ? "" : " hidden"}>⭐</span>`;
+    <span class="lieu-priorite"${enAvant(l) ? "" : " hidden"}>${l.visite ? "❤️" : "⭐"}</span>`;
   li.querySelector("strong").textContent = l.nom;
   li.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
@@ -427,8 +429,14 @@ function ouvrirFiche(id, nouveau) {
   $("f-priorite").checked = !!brouillon.priorite;
   majSaisons();
   $("f-visite").checked = !!brouillon.visite;
-  $("f-date").value = brouillon.dateVisite || "";
-  $("f-date-bloc").hidden = !brouillon.visite;
+  $("f-debut").value = brouillon.dateDebut || "";
+  $("f-fin").value = brouillon.dateFin || "";
+  $("f-fin").min = brouillon.dateDebut || "";
+  $("f-coup-de-coeur").checked = !!brouillon.coupDeCoeur;
+  // Ancienne date au mois (avant les dates exactes) : affichée en rappel tant qu'on n'a pas mis de jours
+  $("f-ancienne-date").hidden = !brouillon.dateVisite || !!brouillon.dateDebut;
+  if (brouillon.dateVisite) $("f-ancienne-date").textContent = `Date notée avant : ${moisEnLettres(brouillon.dateVisite)}`;
+  majPasseAvenir();
   $("f-supprimer").hidden = !id;
   $("f-meta").textContent = id && brouillon.ajoutePar
     ? `Ajouté par ${PERSONNES[brouillon.ajoutePar] || brouillon.ajoutePar}` : "";
@@ -445,9 +453,25 @@ function fermerFiche() {
   retirerTemp();
 }
 
-$("f-visite").onchange = () => {
-  $("f-date-bloc").hidden = !$("f-visite").checked;
+// « On y est allés » coché : dates, coup de cœur et notes au passé ; sinon priorité et notes au futur
+function majPasseAvenir() {
+  const visite = $("f-visite").checked;
+  $("f-bloc-passe").hidden = !visite;
+  $("f-bloc-avenir").hidden = visite;
+  $("f-note").placeholder = visite
+    ? "Ce qu'on a fait, nos souvenirs, nos bonnes adresses…"
+    : "Ce qu'on veut y faire, une idée…";
+}
+$("f-visite").onchange = majPasseAvenir;
+
+// La date de fin ne peut pas être avant celle du début
+$("f-debut").onchange = () => {
+  $("f-fin").min = $("f-debut").value;
+  if (!$("f-fin").value || $("f-fin").value < $("f-debut").value) $("f-fin").value = $("f-debut").value;
 };
+
+const moisEnLettres = (aaaamm) =>
+  new Date(`${aaaamm}-01T12:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
 $("fiche").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -456,12 +480,21 @@ $("fiche").addEventListener("submit", async (e) => {
     nom: $("f-nom").value.trim(),
     categorie: $("f-categorie").value,
     note: $("f-note").value.trim(),
-    priorite: $("f-priorite").checked,
     saison: brouillon.saison || "",
     visite,
-    dateVisite: visite ? $("f-date").value : "",
+    // Priorité pour un lieu à visiter, coup de cœur pour un lieu visité
+    priorite: !visite && $("f-priorite").checked,
+    coupDeCoeur: visite && $("f-coup-de-coeur").checked,
+    dateDebut: visite ? $("f-debut").value : "",
+    dateFin: visite ? $("f-fin").value : "",
+    // L'ancienne date au mois est gardée tant qu'aucune date exacte ne la remplace
+    dateVisite: visite && !$("f-debut").value ? brouillon.dateVisite || "" : null,
   };
   if (!donnees.nom) return;
+  if (donnees.dateFin && donnees.dateFin < donnees.dateDebut) {
+    alert("La date de fin est avant la date de début.");
+    return;
+  }
   try {
     if (ficheId) {
       // Efface les anciens champs : cœurs (remplacés par la priorité) et vuPar (remplacé par la bannière)

@@ -64,14 +64,23 @@
     </div>
 
     <label>Notes
-      <textarea id="f-note" rows="4" placeholder="Ce qu'on veut y faire, la meilleure saison, une idée…"></textarea>
+      <textarea id="f-note" rows="4"></textarea>
     </label>
 
-    <label class="case"><input type="checkbox" id="f-priorite"> ⭐ Priorité, on veut y aller en premier</label>
     <label class="case"><input type="checkbox" id="f-visite"> On y est allés</label>
-    <label id="f-date-bloc" hidden>Quand
-      <input type="month" id="f-date">
-    </label>
+
+    <!-- À visiter -->
+    <label id="f-bloc-avenir" class="case"><input type="checkbox" id="f-priorite"> ⭐ Priorité, on veut y aller en premier</label>
+
+    <!-- Visité -->
+    <div id="f-bloc-passe" class="bloc-passe" hidden>
+      <div class="dates">
+        <label>Du <input type="date" id="f-debut"></label>
+        <label>Au <input type="date" id="f-fin"></label>
+      </div>
+      <p id="f-ancienne-date" class="info" hidden></p>
+      <label class="case"><input type="checkbox" id="f-coup-de-coeur"> ❤️ Coup de cœur, on a adoré</label>
+    </div>
 
     <p id="f-meta" class="meta"></p>
 
