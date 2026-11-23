@@ -1,7 +1,7 @@
 // Service worker minimal : permet l'installation en PWA.
 // Réseau d'abord pour les fichiers de l'app, cache en secours si hors ligne.
 // Firebase, la carte et la recherche passent directement par le réseau.
-const CACHE = "voyage-v15";
+const CACHE = "voyage-v16";
 const FICHIERS = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.json"];
 
 self.addEventListener("install", (e) => {
@@ -27,5 +27,23 @@ self.addEventListener("fetch", (e) => {
         return rep;
       })
       .catch(() => caches.match(e.request))
+  );
+});
+
+// Notification envoyée par Firebase Functions (voir functions/index.js)
+self.addEventListener("push", (e) => {
+  const d = e.data ? e.data.json() : {};
+  e.waitUntil(self.registration.showNotification(d.titre || "Voyage", {
+    body: d.texte || "",
+    icon: "icons/icon-192.png",
+  }));
+});
+
+// Toucher la notification ouvre l'app (ou la ramène au premier plan)
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true })
+      .then((fenetres) => (fenetres.length ? fenetres[0].focus() : self.clients.openWindow("./")))
   );
 });

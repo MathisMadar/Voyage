@@ -19,3 +19,7 @@ export const PERSONNES = {
   A: "Mathis",
   B: "Clara",
 };
+
+// Clé publique des notifications (Web Push). Pas secrète : la clé privée
+// correspondante est rangée dans les secrets Firebase (VAPID_PRIVEE).
+export const VAPID_PUBLIQUE = "BM2sR4HT6G-6-qjCf-aKncJhAOGEMm3RArkliNNYl2ACiOk5kwx6ubRzEQWA-mMNnTWmZnFgK_vkIUt0DBUu5Fo";

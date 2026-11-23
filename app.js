@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getDatabase, ref, push, update, remove, set, onValue, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { firebaseConfig, PERSONNES } from "./firebase-config.js";
+import { firebaseConfig, PERSONNES, VAPID_PUBLIQUE } from "./firebase-config.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -124,7 +124,8 @@ function choisirMoi() {
       ecrireMoi(cle);
       $("choix-moi").hidden = true;
       majMoi();
-      rendre(); // les pastilles « Nouveau » dépendent de qui regarde
+      rendre(); // la bannière et « En attente » dépendent de qui regarde
+      majNotifications(); // l'appareil reçoit maintenant les notifications de cette personne
     };
     boite.appendChild(b);
   }
@@ -601,3 +602,49 @@ async function completerCodesPays() {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
+
+/* ---------- Notifications (envoyées par Firebase Functions, voir functions/index.js) ---------- */
+// Sur iPhone, seulement dans l'app ajoutée à l'écran d'accueil (iOS 16.4 ou plus récent)
+const notifPossibles = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+function cleDepuisBase64(b64) {
+  const brut = atob((b64 + "=".repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(brut, (c) => c.charCodeAt(0));
+}
+
+// Range l'abonnement de cet appareil dans espaces/<id>/abonnements/<empreinte>, avec la personne
+async function enregistrerAbonnement(abonnement) {
+  const empreinte = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(abonnement.endpoint));
+  const cle = [...new Uint8Array(empreinte)].map((o) => o.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  await set(ref(db, `espaces/${ESPACE_ID}/abonnements/${cle}`), { ...abonnement.toJSON(), qui: moi });
+}
+
+// Le bouton 🔔 reste visible tant que cet appareil n'est pas abonné.
+// Déjà autorisé : on réenregistre l'abonnement (il peut changer, ou la personne aussi).
+async function majNotifications() {
+  if (!notifPossibles || !PERSONNES[moi]) { $("btn-notif").hidden = true; return; }
+  let abonnement = null;
+  if (Notification.permission === "granted") {
+    abonnement = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (abonnement) enregistrerAbonnement(abonnement).catch(() => {});
+  }
+  $("btn-notif").hidden = !!abonnement;
+}
+
+$("btn-notif").onclick = async () => {
+  try {
+    if (await Notification.requestPermission() !== "granted") {
+      alert("Les notifications sont bloquées. Pour les autoriser : Réglages > Notifications > Voyage.");
+      return;
+    }
+    const inscription = await navigator.serviceWorker.ready;
+    const abonnement = await inscription.pushManager.getSubscription()
+      || await inscription.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleDepuisBase64(VAPID_PUBLIQUE) });
+    await enregistrerAbonnement(abonnement);
+    $("btn-notif").hidden = true;
+  } catch (err) {
+    alert("Impossible d'activer les notifications : " + err.message);
+  }
+};
+
+majNotifications();

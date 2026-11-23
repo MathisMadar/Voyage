@@ -41,6 +41,7 @@ button { cursor: pointer; border: none; background: none; }
   padding: calc(env(safe-area-inset-top) + 18px) 16px 10px;
 }
 .entete h1 { margin: 0; font-size: 1.3rem; }
+.entete-boutons { display: flex; gap: 6px; }
 .puce {
   padding: 6px 12px;
   border-radius: 999px;
