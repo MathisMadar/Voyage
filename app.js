@@ -149,7 +149,8 @@ function icone(lieu) {
   const cat = CATEGORIES[lieu.categorie] || CATEGORIES.autre;
   return L.divIcon({
     className: "",
-    html: `<div class="epingle${lieu.visite ? " visite" : ""}${enAttente(lieu) ? " attente" : ""}">`
+    html: `<div class="epingle${lieu.visite && !aVisiter(lieu) ? " visite" : ""}`
+      + `${enAttente(lieu) || retourEnAttente(lieu) ? " attente" : ""}">`
       + `<span>${cat.emoji}</span></div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
@@ -274,8 +275,33 @@ $("recherche").addEventListener("submit", async (e) => {
 const aDecider = (l) => !!l.propose && l.ajoutePar !== moi;  // l'autre me le propose : caché, bannière
 const enAttente = (l) => !!l.propose && l.ajoutePar === moi; // je l'ai proposé : visible, « en attente »
 const autre = () => PERSONNES[moi === "A" ? "B" : "A"];
+// Retourner dans un lieu déjà visité : retour = "propose" (en attente de l'autre) puis "oui" (accepté)
+const retourADecider = (l) => l.retour === "propose" && l.retourPar !== moi;
+const retourEnAttente = (l) => l.retour === "propose" && l.retourPar === moi;
+// « À visiter » : jamais visité, ou retour prévu (sauf si c'est à moi de répondre, via la bannière).
+// Un lieu avec retour prévu est donc à la fois dans « À visiter » et « Visités ».
+const aVisiter = (l) => !l.visite || (!!l.retour && !retourADecider(l));
 // Mis en avant en tête de liste : priorité (à visiter) ou coup de cœur (visité)
-const enAvant = (l) => (l.visite ? !!l.coupDeCoeur : !!l.priorite);
+const enAvant = (l, passe) => (passe ? !!l.coupDeCoeur : !!l.priorite);
+// Badge à droite : ❤️ coup de cœur (visités), 🔁 retour prévu ou ⭐ priorité (à visiter)
+const badge = (l, passe) => (passe ? (l.coupDeCoeur ? "❤️" : "") : l.visite ? "🔁" : l.priorite ? "⭐" : "");
+
+// Séjours d'un lieu visité, du plus ancien au plus récent (anciens lieux : dateDebut / dateFin)
+function sejoursDe(l) {
+  if (Array.isArray(l.sejours)) return l.sejours.filter(Boolean);
+  return l.dateDebut ? [{ debut: l.dateDebut, fin: l.dateFin || l.dateDebut }] : [];
+}
+// « 14–19 août 2026 », « 30 août – 2 septembre 2026 », « 3 août 2026 »
+function formaterSejour({ debut, fin }) {
+  const d = new Date(`${debut}T12:00`);
+  const f = new Date(`${fin || debut}T12:00`);
+  const jourMois = { day: "numeric", month: "long" };
+  const complet = (date) => date.toLocaleDateString("fr-FR", { ...jourMois, year: "numeric" });
+  if (!fin || fin === debut) return complet(d);
+  if (d.getFullYear() !== f.getFullYear()) return `${complet(d)} – ${complet(f)}`;
+  if (d.getMonth() !== f.getMonth()) return `${d.toLocaleDateString("fr-FR", jourMois)} – ${complet(f)}`;
+  return `${d.getDate()}–${complet(f)}`;
+}
 
 function rendre() {
   // Épingles : on enlève celles supprimées, on crée ou met à jour les autres
@@ -293,34 +319,37 @@ function rendre() {
     }
   }
 
-  // Liste filtrée, groupée par continent puis par pays
-  const visibles = mesLieux
-    .filter(([, l]) => filtre === "tous" || (filtre === "visite" ? l.visite : !l.visite))
-    .sort(([, a], [, b]) => enAvant(b) - enAvant(a) || a.nom.localeCompare(b.nom, "fr"));
+  // Listes groupées par continent puis par pays
+  const aVoir = mesLieux.filter(([, l]) => aVisiter(l));
+  const vus = mesLieux.filter(([, l]) => l.visite);
 
   const conteneur = $("liste-lieux");
   conteneur.innerHTML = "";
+  let nbAffiches = 0;
   if (filtre === "tous") {
     // Deux sections l'une sous l'autre ; une section vide n'est pas affichée
-    const sections = [["À visiter", visibles.filter(([, l]) => !l.visite)],
-                      ["Visités", visibles.filter(([, l]) => l.visite)]];
-    for (const [nom, entrees] of sections) {
+    for (const [nom, entrees, passe] of [["À visiter", aVoir, false], ["Visités", vus, true]]) {
       if (!entrees.length) continue;
       const titre = document.createElement("p");
       titre.className = "section";
       titre.textContent = `${nom} · ${entrees.length}`;
       conteneur.appendChild(titre);
-      remplirGroupes(conteneur, entrees);
+      remplirGroupes(conteneur, entrees, passe);
+      nbAffiches += entrees.length;
     }
   } else {
-    remplirGroupes(conteneur, visibles);
+    const passe = filtre === "visite";
+    const entrees = passe ? vus : aVoir;
+    remplirGroupes(conteneur, entrees, passe);
+    nbAffiches = entrees.length;
   }
-  $("vide").hidden = visibles.length > 0;
+  $("vide").hidden = nbAffiches > 0;
   majBanniere();
 }
 
-// Ajoute les lieux groupés par continent puis par pays
-function remplirGroupes(conteneur, entrees) {
+// Ajoute les lieux groupés par continent puis par pays ; passe = section « Visités »
+function remplirGroupes(conteneur, entrees, passe) {
+  entrees = [...entrees].sort(([, a], [, b]) => enAvant(b, passe) - enAvant(a, passe) || a.nom.localeCompare(b.nom, "fr"));
   const groupes = {}; // { continent: { pays: [[id, lieu], …] } }
   for (const entree of entrees) {
     const l = entree[1];
@@ -340,7 +369,7 @@ function remplirGroupes(conteneur, entrees) {
       const iPays = entrees.findIndex(([, l]) => l.categorie === "pays" && !l.pays);
       if (iPays >= 0) {
         const [idPays, lieuPays] = entrees.splice(iPays, 1)[0];
-        conteneur.appendChild(titrePays(idPays, lieuPays));
+        conteneur.appendChild(titrePays(idPays, lieuPays, passe));
       } else {
         const sousTitre = document.createElement("h3");
         const [, premier] = entrees[0]; // même pays, donc même code
@@ -349,20 +378,21 @@ function remplirGroupes(conteneur, entrees) {
       }
       if (!entrees.length) continue;
       const ul = document.createElement("ul");
-      for (const [id, l] of entrees) ul.appendChild(elementLieu(id, l));
+      for (const [id, l] of entrees) ul.appendChild(elementLieu(id, l, passe));
       conteneur.appendChild(ul);
     }
   }
 }
 
 // Sous-titre cliquable pour un pays qui a sa propre fiche : drapeau, nom (couleur de la saison), emoji du type
-function titrePays(id, l) {
+function titrePays(id, l, passe) {
+  const attente = !passe && (enAttente(l) || retourEnAttente(l));
   const h3 = document.createElement("h3");
-  h3.className = "titre-pays" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
+  h3.className = "titre-pays" + (passe ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   h3.innerHTML = `<span class="titre-nom"></span>
     <span>${CATEGORIES.pays.emoji}</span>
-    <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
-    <span class="lieu-priorite"${enAvant(l) ? "" : " hidden"}>${l.visite ? "❤️" : "⭐"}</span>`;
+    <span class="lieu-attente"${attente ? "" : " hidden"}></span>
+    <span class="lieu-priorite"${badge(l, passe) ? "" : " hidden"}>${badge(l, passe)}</span>`;
   h3.querySelector(".titre-nom").textContent = avecDrapeau(l.codePays, l.nom);
   h3.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   h3.onclick = () => {
@@ -372,14 +402,15 @@ function titrePays(id, l) {
   return h3;
 }
 
-function elementLieu(id, l) {
+function elementLieu(id, l, passe) {
   const cat = CATEGORIES[l.categorie] || CATEGORIES.autre;
+  const attente = !passe && (enAttente(l) || retourEnAttente(l));
   const li = document.createElement("li");
-  li.className = "lieu" + (l.visite ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
+  li.className = "lieu" + (passe ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
-    <span class="lieu-attente"${enAttente(l) ? "" : " hidden"}></span>
-    <span class="lieu-priorite"${enAvant(l) ? "" : " hidden"}>${l.visite ? "❤️" : "⭐"}</span>`;
+    <span class="lieu-attente"${attente ? "" : " hidden"}></span>
+    <span class="lieu-priorite"${badge(l, passe) ? "" : " hidden"}>${badge(l, passe)}</span>`;
   li.querySelector("strong").textContent = l.nom;
   li.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
   li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
@@ -429,13 +460,16 @@ function ouvrirFiche(id, nouveau) {
   $("f-priorite").checked = !!brouillon.priorite;
   majSaisons();
   $("f-visite").checked = !!brouillon.visite;
-  $("f-debut").value = brouillon.dateDebut || "";
-  $("f-fin").value = brouillon.dateFin || "";
-  $("f-fin").min = brouillon.dateDebut || "";
+  brouillon.sejours = sejoursDe(brouillon).map((x) => ({ ...x }));
+  $("f-debut").value = "";
+  $("f-fin").value = "";
+  $("f-fin").min = "";
+  majSejours();
   $("f-coup-de-coeur").checked = !!brouillon.coupDeCoeur;
   // Ancienne date au mois (avant les dates exactes) : affichée en rappel tant qu'on n'a pas mis de jours
-  $("f-ancienne-date").hidden = !brouillon.dateVisite || !!brouillon.dateDebut;
+  $("f-ancienne-date").hidden = !brouillon.dateVisite || brouillon.sejours.length > 0;
   if (brouillon.dateVisite) $("f-ancienne-date").textContent = `Date notée avant : ${moisEnLettres(brouillon.dateVisite)}`;
+  majRetour();
   majPasseAvenir();
   $("f-supprimer").hidden = !id;
   $("f-meta").textContent = id && brouillon.ajoutePar
@@ -464,6 +498,53 @@ function majPasseAvenir() {
 }
 $("f-visite").onchange = majPasseAvenir;
 
+// Liste des séjours (✕ pour en retirer un, pris en compte à l'enregistrement)
+function majSejours() {
+  const ul = $("f-sejours");
+  ul.innerHTML = "";
+  brouillon.sejours.forEach((sejour, i) => {
+    const li = document.createElement("li");
+    li.textContent = formaterSejour(sejour);
+    const x = document.createElement("button");
+    x.type = "button";
+    x.textContent = "✕";
+    x.setAttribute("aria-label", "Retirer ce séjour");
+    x.onclick = () => { brouillon.sejours.splice(i, 1); majSejours(); };
+    li.appendChild(x);
+    ul.appendChild(li);
+  });
+  $("f-sejours-bloc").hidden = !brouillon.sejours.length;
+  $("f-dates-titre").textContent = brouillon.sejours.length ? "Ajouter un séjour" : "Dates du séjour";
+}
+
+// « Y retourner » : seulement pour un lieu déjà enregistré comme visité
+function majRetour() {
+  const l = brouillon;
+  const enregistreVisite = !!ficheId && !!lieux[ficheId]?.visite;
+  $("f-retour-bloc").hidden = !enregistreVisite;
+  $("f-retour").hidden = !!l.retour;
+  $("f-retour-info").textContent = l.retour === "oui" ? "🔁 On y retourne !"
+    : retourEnAttente(l) ? `🔁 Retour proposé, en attente de ${autre()}`
+    : retourADecider(l) ? `🔁 ${PERSONNES[l.retourPar]} propose d'y retourner`
+    : "";
+  // On peut annuler un retour accepté, ou sa propre proposition (l'autre répond avec la bannière)
+  $("f-retour-annuler").hidden = !(l.retour === "oui" || retourEnAttente(l));
+}
+
+// Écrit tout de suite, à part du reste de la fiche
+$("f-retour").onclick = async () => {
+  brouillon.retour = "propose";
+  brouillon.retourPar = moi;
+  majRetour();
+  await update(ref(db, `${cheminLieux}/${ficheId}`), { retour: "propose", retourPar: moi });
+};
+$("f-retour-annuler").onclick = async () => {
+  brouillon.retour = null;
+  brouillon.retourPar = null;
+  majRetour();
+  await update(ref(db, `${cheminLieux}/${ficheId}`), { retour: null, retourPar: null });
+};
+
 // La date de fin ne peut pas être avant celle du début
 $("f-debut").onchange = () => {
   $("f-fin").min = $("f-debut").value;
@@ -476,6 +557,15 @@ const moisEnLettres = (aaaamm) =>
 $("fiche").addEventListener("submit", async (e) => {
   e.preventDefault();
   const visite = $("f-visite").checked;
+  // Le séjour saisi dans Du / Au s'ajoute à la liste
+  const nouveauSejour = visite && $("f-debut").value
+    ? { debut: $("f-debut").value, fin: $("f-fin").value || $("f-debut").value } : null;
+  if (nouveauSejour && nouveauSejour.fin < nouveauSejour.debut) {
+    alert("La date de fin est avant la date de début.");
+    return;
+  }
+  const sejours = visite ? [...brouillon.sejours, ...(nouveauSejour ? [nouveauSejour] : [])] : [];
+  sejours.sort((a, b) => a.debut.localeCompare(b.debut));
   const donnees = {
     nom: $("f-nom").value.trim(),
     categorie: $("f-categorie").value,
@@ -485,16 +575,15 @@ $("fiche").addEventListener("submit", async (e) => {
     // Priorité pour un lieu à visiter, coup de cœur pour un lieu visité
     priorite: !visite && $("f-priorite").checked,
     coupDeCoeur: visite && $("f-coup-de-coeur").checked,
-    dateDebut: visite ? $("f-debut").value : "",
-    dateFin: visite ? $("f-fin").value : "",
+    sejours: sejours.length ? sejours : null,
+    dateDebut: null, // remplacés par sejours
+    dateFin: null,
     // L'ancienne date au mois est gardée tant qu'aucune date exacte ne la remplace
-    dateVisite: visite && !$("f-debut").value ? brouillon.dateVisite || "" : null,
+    dateVisite: visite && !sejours.length ? brouillon.dateVisite || "" : null,
   };
+  // Nouveau séjour ajouté (on y est retournés) ou plus visité : le retour prévu est terminé
+  if (nouveauSejour || !visite) Object.assign(donnees, { retour: null, retourPar: null });
   if (!donnees.nom) return;
-  if (donnees.dateFin && donnees.dateFin < donnees.dateDebut) {
-    alert("La date de fin est avant la date de début.");
-    return;
-  }
   try {
     if (ficheId) {
       // Efface les anciens champs : cœurs (remplacés par la priorité) et vuPar (remplacé par la bannière)
@@ -563,30 +652,44 @@ function afficherBanniere() {
   const refus = PERSONNES[moi] && Object.entries(avis).find(([, a]) => a.pour === moi);
   if (refus) {
     const [idAvis, a] = refus;
-    $("banniere-texte").textContent = `${PERSONNES[a.par] || a.par} n'a pas retenu ${a.nom}`;
+    const qui = PERSONNES[a.par] || a.par;
+    $("banniere-texte").textContent = a.retour
+      ? `${qui} ne veut pas retourner à ${a.nom} pour l'instant`
+      : `${qui} n'a pas retenu ${a.nom}`;
     bouton("OK", "principal", () => remove(ref(db, `${cheminAvis}/${idAvis}`)));
     banniere.hidden = false;
     return;
   }
 
-  const proposition = PERSONNES[moi] && Object.entries(lieux).find(([, l]) => aDecider(l));
+  const proposition = PERSONNES[moi] && (Object.entries(lieux).find(([, l]) => aDecider(l))
+    || Object.entries(lieux).find(([, l]) => retourADecider(l)));
   if (!proposition) { banniere.hidden = true; return; }
   const [id, l] = proposition;
-  $("banniere-texte").textContent = `${PERSONNES[l.ajoutePar] || l.ajoutePar} veut visiter ${l.nom} avec toi`;
+  const estRetour = retourADecider(l);
+  $("banniere-texte").textContent = estRetour
+    ? `${PERSONNES[l.retourPar] || l.retourPar} veut retourner à ${l.nom} avec toi`
+    : `${PERSONNES[l.ajoutePar] || l.ajoutePar} veut visiter ${l.nom} avec toi`;
   bouton("Voir", "", () => {
     carte.flyTo([l.lat, l.lng], l.categorie === "pays" ? 4 : 6);
     ouvrirFiche(id);
   });
   bouton("Refuser", "danger", () => {
-    // Suppression du lieu et avis pour l'autre, en une seule écriture
+    // En une seule écriture : avis pour l'autre, et suppression du lieu proposé
+    // (un retour refusé garde le lieu dans « Visités », on retire juste le retour)
     const idAvis = push(ref(db, cheminAvis)).key;
-    update(ref(db, `espaces/${ESPACE_ID}`), {
+    update(ref(db, `espaces/${ESPACE_ID}`), estRetour ? {
+      [`lieux/${id}/retour`]: null,
+      [`lieux/${id}/retourPar`]: null,
+      [`avis/${idAvis}`]: { pour: l.retourPar, par: moi, nom: l.nom, retour: true },
+    } : {
       [`lieux/${id}`]: null,
       [`avis/${idAvis}`]: { pour: l.ajoutePar, par: moi, nom: l.nom },
     });
   });
   bouton("Accepter", "principal", () => {
-    if (lieux[id]) set(ref(db, `${cheminLieux}/${id}/propose`), null);
+    if (!lieux[id]) return;
+    if (estRetour) set(ref(db, `${cheminLieux}/${id}/retour`), "oui");
+    else set(ref(db, `${cheminLieux}/${id}/propose`), null);
   });
   banniere.hidden = false;
 }

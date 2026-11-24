@@ -74,12 +74,22 @@
 
     <!-- Visité -->
     <div id="f-bloc-passe" class="bloc-passe" hidden>
-      <div class="dates">
-        <label>Du <input type="date" id="f-debut"></label>
-        <label>Au <input type="date" id="f-fin"></label>
+      <div id="f-sejours-bloc" class="champ">Nos séjours
+        <ul id="f-sejours" class="sejours"></ul>
+      </div>
+      <div class="champ"><span id="f-dates-titre">Dates du séjour</span>
+        <div class="dates">
+          <label>Du <input type="date" id="f-debut"></label>
+          <label>Au <input type="date" id="f-fin"></label>
+        </div>
       </div>
       <p id="f-ancienne-date" class="info" hidden></p>
       <label class="case"><input type="checkbox" id="f-coup-de-coeur"> ❤️ Coup de cœur, on a adoré</label>
+      <div id="f-retour-bloc" class="retour">
+        <button type="button" id="f-retour">🔁 Y retourner</button>
+        <span id="f-retour-info" class="info"></span>
+        <button type="button" id="f-retour-annuler" class="lien">Annuler</button>
+      </div>
     </div>
 
     <p id="f-meta" class="meta"></p>

@@ -1,6 +1,7 @@
 // Notifications de l'app Voyage (Web Push), envoyées par Firebase Functions :
 // - un lieu est proposé  -> notification à l'autre personne
 // - une proposition est acceptée -> notification à la personne qui l'avait proposée
+// - quelqu'un propose de retourner dans un lieu visité -> l'autre ; retour accepté -> celle qui l'a proposé
 // Déploiement : firebase deploy --only functions (depuis le dossier du projet)
 import { onValueCreated, onValueUpdated } from "firebase-functions/v2/database";
 import { defineSecret } from "firebase-functions/params";
@@ -49,11 +50,27 @@ export const lieuPropose = onValueCreated(options, async (event) => {
     `${PERSONNES[l.ajoutePar]} veut visiter ${l.nom} avec toi`);
 });
 
+// Modification d'un lieu : nouvelle destination acceptée, retour proposé ou retour accepté
 export const lieuAccepte = onValueUpdated(options, async (event) => {
   const avant = event.data.before.val();
   const apres = event.data.after.val();
-  // Seulement le passage « proposé » -> « accepté »
-  if (!avant?.propose || apres?.propose || !PERSONNES[apres?.ajoutePar]) return;
-  await notifier(event.params.espace, apres.ajoutePar, "Destination acceptée",
-    `${PERSONNES[autre(apres.ajoutePar)]} a accepté ${apres.nom} 🎉`);
+  if (!apres) return;
+  const espace = event.params.espace;
+
+  // Nouvelle destination : passage « proposé » -> « accepté »
+  if (avant?.propose && !apres.propose && PERSONNES[apres.ajoutePar]) {
+    await notifier(espace, apres.ajoutePar, "Destination acceptée",
+      `${PERSONNES[autre(apres.ajoutePar)]} a accepté ${apres.nom} 🎉`);
+  }
+
+  // Retour dans un lieu visité : proposé, puis accepté
+  const par = apres.retourPar;
+  if (!PERSONNES[par]) return;
+  if (avant?.retour !== "propose" && apres.retour === "propose") {
+    await notifier(espace, autre(par), "On y retourne ?",
+      `${PERSONNES[par]} veut retourner à ${apres.nom} avec toi`);
+  } else if (avant?.retour === "propose" && apres.retour === "oui") {
+    await notifier(espace, par, "Retour accepté",
+      `${PERSONNES[autre(par)]} est d'accord pour retourner à ${apres.nom} 🎉`);
+  }
 });
