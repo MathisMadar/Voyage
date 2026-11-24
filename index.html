@@ -11,6 +11,9 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +27,7 @@
 
   <div id="banniere" class="banniere" hidden>
     <p id="banniere-texte"></p>
+    <p id="banniere-mot" class="mot" hidden></p>
     <div id="banniere-actions" class="banniere-actions"></div>
   </div>
 
@@ -43,7 +47,6 @@
         <button data-filtre="visite">Visités</button>
         <button data-filtre="tous">Tous</button>
       </div>
-      <p id="legende" class="legende"></p>
       <div id="liste-lieux"></div>
       <p id="vide" class="vide" hidden>Aucun endroit pour l'instant.</p>
     </section>
@@ -55,7 +58,7 @@
     <input id="f-nom" class="f-nom" placeholder="Nom de l'endroit" required>
     <p id="f-pays" class="pays"></p>
 
-    <label>Type
+    <label>Catégorie
       <select id="f-categorie"></select>
     </label>
 
@@ -69,8 +72,23 @@
 
     <label class="case"><input type="checkbox" id="f-visite"> On y est allés</label>
 
-    <!-- À visiter -->
-    <label id="f-bloc-avenir" class="case"><input type="checkbox" id="f-priorite"> ⭐ Priorité, on veut y aller en premier</label>
+    <!-- À visiter : le projet (type de voyage, dates envisagées, petit mot) -->
+    <div id="f-bloc-avenir" class="bloc-passe">
+      <div class="champ">Type de voyage
+        <div id="f-formules" class="choix-groupe"></div>
+      </div>
+      <div class="champ">Dates envisagées
+        <div class="dates">
+          <label>Du <input type="date" id="f-env-debut"></label>
+          <label>Au <input type="date" id="f-env-fin"></label>
+        </div>
+      </div>
+      <label id="f-mot-bloc">Un petit mot pour <span id="f-mot-pour"></span>
+        <textarea id="f-mot" rows="2" placeholder="Il apparaîtra dans la proposition"></textarea>
+      </label>
+      <p id="f-mot-lu" class="mot" hidden></p>
+      <label class="case"><input type="checkbox" id="f-priorite"> ⭐ Priorité, on veut y aller en premier</label>
+    </div>
 
     <!-- Visité -->
     <div id="f-bloc-passe" class="bloc-passe" hidden>
@@ -86,7 +104,7 @@
       <p id="f-ancienne-date" class="info" hidden></p>
       <label class="case"><input type="checkbox" id="f-coup-de-coeur"> ❤️ Coup de cœur, on a adoré</label>
       <div id="f-retour-bloc" class="retour">
-        <button type="button" id="f-retour">🔁 Y retourner</button>
+        <button type="button" id="f-retour" class="secondaire">🔁 Y retourner</button>
         <span id="f-retour-info" class="info"></span>
         <button type="button" id="f-retour-annuler" class="lien">Annuler</button>
       </div>

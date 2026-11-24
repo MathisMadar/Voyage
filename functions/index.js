@@ -18,6 +18,25 @@ const VAPID_PUBLIQUE = "BM2sR4HT6G-6-qjCf-aKncJhAOGEMm3RArkliNNYl2ACiOk5kwx6ubRz
 // Les mêmes prénoms que dans firebase-config.js
 const PERSONNES = { A: "Mathis", B: "Clara" };
 const autre = (qui) => (qui === "A" ? "B" : "A");
+// Les mêmes types de voyage que FORMULES dans app.js
+const FORMULES = {
+  journee: "une escapade d'une journée",
+  weekend: "un week-end",
+  vacances: "des vacances",
+  roadtrip: "un road trip",
+};
+
+// « 12–14 décembre 2026 » (même format que formaterSejour dans app.js)
+function formaterDates(debut, fin) {
+  const d = new Date(`${debut}T12:00:00Z`);
+  const f = new Date(`${fin || debut}T12:00:00Z`);
+  const jourMois = { day: "numeric", month: "long", timeZone: "UTC" };
+  const complet = (date) => date.toLocaleDateString("fr-FR", { ...jourMois, year: "numeric" });
+  if (!fin || fin === debut) return complet(d);
+  if (d.getUTCFullYear() !== f.getUTCFullYear()) return `${complet(d)} – ${complet(f)}`;
+  if (d.getUTCMonth() !== f.getUTCMonth()) return `${d.toLocaleDateString("fr-FR", jourMois)} – ${complet(f)}`;
+  return `${d.getUTCDate()}–${complet(f)}`;
+}
 
 // Envoie la notification à tous les appareils de la personne `pour`
 async function notifier(espace, pour, titre, texte) {
@@ -46,8 +65,14 @@ const options = {
 export const lieuPropose = onValueCreated(options, async (event) => {
   const l = event.data.val();
   if (!l || !l.propose || !PERSONNES[l.ajoutePar]) return;
-  await notifier(event.params.espace, autre(l.ajoutePar), "Nouvelle destination",
-    `${PERSONNES[l.ajoutePar]} veut visiter ${l.nom} avec toi`);
+  // « Mathis te propose un week-end à Paris · 12–14 décembre 2026 », puis le petit mot
+  let texte = FORMULES[l.formule]
+    ? `${PERSONNES[l.ajoutePar]} te propose ${FORMULES[l.formule]} à ${l.nom}`
+    : `${PERSONNES[l.ajoutePar]} veut visiter ${l.nom} avec toi`;
+  if (l.envisageDebut) texte += ` · ${formaterDates(l.envisageDebut, l.envisageFin)}`;
+  if (l.mot) texte += `\n« ${l.mot} »`;
+  await notifier(event.params.espace, autre(l.ajoutePar),
+    FORMULES[l.formule] ? "Nouvelle proposition" : "Nouvelle destination", texte);
 });
 
 // Modification d'un lieu : nouvelle destination acceptée, retour proposé ou retour accepté

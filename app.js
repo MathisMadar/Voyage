@@ -57,10 +57,19 @@ const CATEGORIES = {
 
 // Saison idéale : une seule par lieu, couleurs dans style.css (--printemps…)
 const SAISONS = {
-  printemps: "🌸 Printemps",
-  ete:       "☀️ Été",
-  automne:   "🍂 Automne",
-  hiver:     "❄️ Hiver",
+  printemps: "Printemps",
+  ete:       "Été",
+  automne:   "Automne",
+  hiver:     "Hiver",
+};
+
+// Type de voyage proposé : affiché dans la bannière (« Mathis te propose un week-end à Paris »)
+// Recopié dans functions/index.js pour le texte des notifications
+const FORMULES = {
+  journee:  { label: "Journée",   texte: "une escapade d'une journée" },
+  weekend:  { label: "Week-end",  texte: "un week-end" },
+  vacances: { label: "Vacances",  texte: "des vacances" },
+  roadtrip: { label: "Road trip", texte: "un road trip" },
 };
 
 // Code pays ISO (donné par Nominatim) -> continent
@@ -132,7 +141,8 @@ function choisirMoi() {
   $("choix-moi").hidden = false;
 }
 function majMoi() {
-  $("btn-moi").textContent = PERSONNES[moi] || "?";
+  $("btn-moi").textContent = PERSONNES[moi]?.[0] || "?";
+  $("btn-moi").title = PERSONNES[moi] ? `${PERSONNES[moi]} (changer de personne)` : "Qui es-tu ?";
 }
 $("btn-moi").onclick = choisirMoi;
 majMoi();
@@ -140,26 +150,27 @@ if (!PERSONNES[moi]) choisirMoi();
 
 /* ---------- Carte ---------- */
 const carte = L.map("carte", { zoomControl: false, worldCopyJump: true }).setView([30, 10], 2);
+// Tuiles OpenStreetMap adoucies par un filtre de couleurs (voir .leaflet-tile-pane dans style.css)
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
   attribution: "© OpenStreetMap",
 }).addTo(carte);
 
-function icone(lieu) {
-  const cat = CATEGORIES[lieu.categorie] || CATEGORIES.autre;
+// Petit rond : vert sapin (à visiter), gris (visité), pointillé (en attente de l'autre)
+function icone(lieu, classe = "") {
+  const etat = lieu.visite && !aVisiter(lieu) ? " visite" : "";
+  const attente = enAttente(lieu) || retourEnAttente(lieu) ? " attente" : "";
   return L.divIcon({
     className: "",
-    html: `<div class="epingle${lieu.visite && !aVisiter(lieu) ? " visite" : ""}`
-      + `${enAttente(lieu) || retourEnAttente(lieu) ? " attente" : ""}">`
-      + `<span>${cat.emoji}</span></div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
+    html: `<div class="epingle${etat}${attente} ${classe}"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 }
 
 function montrerTemp(lat, lng) {
   retirerTemp();
-  marqueurTemp = L.marker([lat, lng], { icon: icone({ categorie: "autre" }) }).addTo(carte);
+  marqueurTemp = L.marker([lat, lng], { icon: icone({}, "temp") }).addTo(carte);
 }
 function retirerTemp() {
   if (marqueurTemp) { marqueurTemp.remove(); marqueurTemp = null; }
@@ -413,7 +424,9 @@ function elementLieu(id, l, passe) {
     <span class="lieu-priorite"${badge(l, passe) ? "" : " hidden"}>${badge(l, passe)}</span>`;
   li.querySelector("strong").textContent = l.nom;
   li.querySelector(".lieu-attente").textContent = `En attente de ${autre()}`;
-  li.querySelector("small").textContent = l.note ? l.note.split("\n")[0] : "";
+  const projet = !passe && [FORMULES[l.formule]?.label,
+    l.envisageDebut && formaterSejour({ debut: l.envisageDebut, fin: l.envisageFin })].filter(Boolean).join(" · ");
+  li.querySelector("small").textContent = projet || (l.note ? l.note.split("\n")[0] : "");
   li.onclick = () => {
     carte.flyTo([l.lat, l.lng], Math.max(carte.getZoom(), 6));
     ouvrirFiche(id);
@@ -426,7 +439,7 @@ for (const [cle, c] of Object.entries(CATEGORIES)) {
   $("f-categorie").add(new Option(`${c.emoji} ${c.label}`, cle));
 }
 
-// Boutons de saison dans la fiche (toucher à nouveau pour enlever) et légende de la liste
+// Boutons de saison dans la fiche (toucher à nouveau pour enlever)
 for (const [cle, label] of Object.entries(SAISONS)) {
   const b = document.createElement("button");
   b.type = "button";
@@ -438,14 +451,34 @@ for (const [cle, label] of Object.entries(SAISONS)) {
     majSaisons();
   };
   $("f-saisons").appendChild(b);
-
-  const s = document.createElement("span");
-  s.className = `saison-${cle}`;
-  s.textContent = label;
-  $("legende").appendChild(s);
 }
 function majSaisons() {
   for (const b of $("f-saisons").children) b.classList.toggle("actif", b.dataset.saison === brouillon.saison);
+}
+
+// Boutons de type de voyage, même principe que les saisons
+for (const [cle, f] of Object.entries(FORMULES)) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.dataset.formule = cle;
+  b.textContent = f.label;
+  b.onclick = () => {
+    brouillon.formule = brouillon.formule === cle ? "" : cle;
+    majFormules();
+  };
+  $("f-formules").appendChild(b);
+}
+function majFormules() {
+  for (const b of $("f-formules").children) b.classList.toggle("actif", b.dataset.formule === brouillon.formule);
+}
+
+// « Mathis te propose un week-end à Paris · 12–14 décembre 2026 » (ou « veut visiter Paris avec toi »)
+function texteProposition(l) {
+  const qui = PERSONNES[l.ajoutePar] || l.ajoutePar;
+  const texte = FORMULES[l.formule]
+    ? `${qui} te propose ${FORMULES[l.formule].texte} à ${l.nom}`
+    : `${qui} veut visiter ${l.nom} avec toi`;
+  return l.envisageDebut ? `${texte} · ${formaterSejour({ debut: l.envisageDebut, fin: l.envisageFin })}` : texte;
 }
 
 function ouvrirFiche(id, nouveau) {
@@ -459,6 +492,17 @@ function ouvrirFiche(id, nouveau) {
   $("f-note").value = brouillon.note || "";
   $("f-priorite").checked = !!brouillon.priorite;
   majSaisons();
+  brouillon.formule ||= "";
+  majFormules();
+  $("f-env-debut").value = brouillon.envisageDebut || "";
+  $("f-env-fin").value = brouillon.envisageFin || "";
+  $("f-env-fin").min = brouillon.envisageDebut || "";
+  // Petit mot : on l'écrit en proposant un nouveau lieu, ensuite il est seulement affiché
+  $("f-mot-pour").textContent = autre() || "l'autre";
+  $("f-mot").value = "";
+  $("f-mot-bloc").hidden = !!id;
+  $("f-mot-lu").hidden = !(id && brouillon.mot);
+  if (id && brouillon.mot) $("f-mot-lu").textContent = `« ${brouillon.mot} » — ${PERSONNES[brouillon.ajoutePar] || ""}`;
   $("f-visite").checked = !!brouillon.visite;
   brouillon.sejours = sejoursDe(brouillon).map((x) => ({ ...x }));
   $("f-debut").value = "";
@@ -496,7 +540,13 @@ function majPasseAvenir() {
     ? "Ce qu'on a fait, nos souvenirs, nos bonnes adresses…"
     : "Ce qu'on veut y faire, une idée…";
 }
-$("f-visite").onchange = majPasseAvenir;
+$("f-visite").onchange = () => {
+  if ($("f-visite").checked && !$("f-debut").value && $("f-env-debut").value) {
+    $("f-debut").value = $("f-env-debut").value;
+    $("f-fin").value = $("f-env-fin").value || $("f-env-debut").value;
+  }
+  majPasseAvenir();
+};
 
 // Liste des séjours (✕ pour en retirer un, pris en compte à l'enregistrement)
 function majSejours() {
@@ -545,11 +595,13 @@ $("f-retour-annuler").onclick = async () => {
   await update(ref(db, `${cheminLieux}/${ficheId}`), { retour: null, retourPar: null });
 };
 
-// La date de fin ne peut pas être avant celle du début
-$("f-debut").onchange = () => {
-  $("f-fin").min = $("f-debut").value;
-  if (!$("f-fin").value || $("f-fin").value < $("f-debut").value) $("f-fin").value = $("f-debut").value;
-};
+// La date de fin ne peut pas être avant celle du début (séjour et dates envisagées)
+for (const [debut, fin] of [["f-debut", "f-fin"], ["f-env-debut", "f-env-fin"]]) {
+  $(debut).onchange = () => {
+    $(fin).min = $(debut).value;
+    if (!$(fin).value || $(fin).value < $(debut).value) $(fin).value = $(debut).value;
+  };
+}
 
 const moisEnLettres = (aaaamm) =>
   new Date(`${aaaamm}-01T12:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
@@ -581,6 +633,18 @@ $("fiche").addEventListener("submit", async (e) => {
     // L'ancienne date au mois est gardée tant qu'aucune date exacte ne la remplace
     dateVisite: visite && !sejours.length ? brouillon.dateVisite || "" : null,
   };
+  // Projet (type de voyage, dates envisagées) : seulement pour un lieu à visiter
+  const envisageDebut = $("f-env-debut").value;
+  const envisageFin = envisageDebut ? $("f-env-fin").value || envisageDebut : "";
+  if (!visite && envisageFin < envisageDebut) {
+    alert("La date de fin envisagée est avant la date de début.");
+    return;
+  }
+  Object.assign(donnees, {
+    formule: visite ? null : brouillon.formule || null,
+    envisageDebut: visite ? null : envisageDebut || null,
+    envisageFin: visite ? null : envisageFin || null,
+  });
   // Nouveau séjour ajouté (on y est retournés) ou plus visité : le retour prévu est terminé
   if (nouveauSejour || !visite) Object.assign(donnees, { retour: null, retourPar: null });
   if (!donnees.nom) return;
@@ -596,6 +660,7 @@ $("fiche").addEventListener("submit", async (e) => {
         pays: brouillon.pays || "",
         codePays: brouillon.codePays || "",
         ajoutePar: moi,
+        mot: $("f-mot").value.trim() || null,
         propose: true, // en attente de l'accord de l'autre
         creeLe: serverTimestamp(),
       });
@@ -656,6 +721,7 @@ function afficherBanniere() {
     $("banniere-texte").textContent = a.retour
       ? `${qui} ne veut pas retourner à ${a.nom} pour l'instant`
       : `${qui} n'a pas retenu ${a.nom}`;
+    $("banniere-mot").hidden = true;
     bouton("OK", "principal", () => remove(ref(db, `${cheminAvis}/${idAvis}`)));
     banniere.hidden = false;
     return;
@@ -668,8 +734,10 @@ function afficherBanniere() {
   const estRetour = retourADecider(l);
   $("banniere-texte").textContent = estRetour
     ? `${PERSONNES[l.retourPar] || l.retourPar} veut retourner à ${l.nom} avec toi`
-    : `${PERSONNES[l.ajoutePar] || l.ajoutePar} veut visiter ${l.nom} avec toi`;
-  bouton("Voir", "", () => {
+    : texteProposition(l);
+  $("banniere-mot").hidden = estRetour || !l.mot;
+  $("banniere-mot").textContent = l.mot ? `« ${l.mot} »` : "";
+  bouton("Voir", "secondaire", () => {
     carte.flyTo([l.lat, l.lng], l.categorie === "pays" ? 4 : 6);
     ouvrirFiche(id);
   });

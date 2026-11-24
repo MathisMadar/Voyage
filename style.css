@@ -1,17 +1,21 @@
 :root {
-  --fond: #fbf7f2;
+  --fond: #f6f3ee;
   --surface: #ffffff;
-  --texte: #1f2a2e;
-  --doux: #6b7478;
-  --bord: #e7e0d6;
-  --accent: #2f6f5e;
-  --coeur: #e8735a;
-  --rayon: 14px;
-  /* Saisons : nom du lieu écrit dans cette couleur (contraste ≥ 4,5 sur blanc) */
-  --printemps: #2e8540;
-  --ete: #9a6700;
-  --automne: #b4501f;
-  --hiver: #2563b0;
+  --texte: #1d2522;
+  --doux: #747b78;
+  --bord: #e4ded4;
+  --trait: #eee9e1;      /* séparateurs fins */
+  --accent: #2c5e50;     /* vert sapin, la seule couleur forte */
+  --accent-doux: #e6eeeb;
+  --coeur: #c25a43;      /* erreurs, suppression */
+  --rayon: 16px;
+  --ombre: 0 1px 2px rgba(29, 37, 34, .04), 0 4px 16px rgba(29, 37, 34, .06);
+  --titre: "Fraunces", Georgia, serif;
+  /* Saisons : petit point de couleur devant le nom */
+  --printemps: #6f9d6a;
+  --ete: #d4a63a;
+  --automne: #c06a3c;
+  --hiver: #5b86b5;
 }
 
 [hidden] { display: none !important; }
@@ -27,27 +31,51 @@ body {
   background: var(--fond);
   color: var(--texte);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: none; }
+input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+/* ---------- Boutons (une seule famille) ---------- */
+.principal, .secondaire, .puce {
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: .95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.principal { margin-left: auto; background: var(--accent); color: #fff; }
+.secondaire, .puce { background: var(--surface); border: 1px solid var(--bord); color: var(--texte); }
+.puce { padding: 7px 14px; font-size: .88rem; font-weight: 500; }
+.danger { padding: 10px 6px; color: var(--coeur); font-weight: 500; }
+.lien { color: var(--doux); text-decoration: underline; font-size: .85rem; }
 
 /* ---------- En-tête ---------- */
 .entete {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 18px) 16px 10px;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px 12px;
 }
-.entete h1 { margin: 0; font-size: 1.3rem; }
-.entete-boutons { display: flex; gap: 6px; }
-.puce {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--bord);
-  font-size: .9rem;
+.entete h1 {
+  margin: 0;
+  font-family: var(--titre);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.entete-boutons { display: flex; align-items: center; gap: 8px; }
+/* Pastille ronde avec l'initiale de la personne */
+#btn-moi {
+  width: 36px; height: 36px;
+  padding: 0;
+  border: none;
+  background: var(--accent-doux);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /* ---------- Mise en page ---------- */
@@ -59,50 +87,51 @@ button { cursor: pointer; border: none; background: none; }
 }
 .zone-carte {
   position: relative;
-  flex: 0 0 52vh;
+  flex: 0 0 48vh;
 }
-#carte { position: absolute; inset: 0; }
+#carte { position: absolute; inset: 0; background: #f2efe9; }
 .liste {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px calc(env(safe-area-inset-bottom) + 16px);
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 24px);
 }
 
 @media (min-width: 900px) {
   .contenu { flex-direction: row-reverse; }
   .zone-carte { flex: 1; }
-  .liste { flex: 0 0 360px; border-right: 1px solid var(--bord); }
+  .liste { flex: 0 0 380px; border-right: 1px solid var(--trait); }
 }
 
 /* ---------- Recherche ---------- */
 .recherche {
   position: absolute;
-  top: 10px; left: 10px; right: 10px;
+  top: 12px; left: 12px; right: 12px;
   z-index: 1000;
 }
 .recherche input {
   width: 100%;
-  padding: 11px 14px;
-  border: 1px solid var(--bord);
-  border-radius: var(--rayon);
+  padding: 12px 16px;
+  border: none;
+  border-radius: 999px;
   background: var(--surface);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  box-shadow: var(--ombre);
+  outline: none;
 }
 .resultats {
   position: absolute;
-  top: 56px; left: 10px; right: 10px;
-  z-index: 1000;
+  top: 60px; left: 12px; right: 12px;
+  z-index: 1001;
   margin: 0;
-  padding: 4px;
+  padding: 6px;
   list-style: none;
   max-height: 40vh;
   overflow-y: auto;
   background: var(--surface);
   border-radius: var(--rayon);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+  box-shadow: var(--ombre);
 }
 .resultats li {
-  padding: 10px;
+  padding: 10px 12px;
   border-radius: 10px;
   font-size: .9rem;
   cursor: pointer;
@@ -112,90 +141,105 @@ button { cursor: pointer; border: none; background: none; }
 
 .astuce {
   position: absolute;
-  bottom: 8px; left: 50%;
+  top: 62px; left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 999;
   margin: 0;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .85);
+  background: rgba(255, 255, 255, .8);
   font-size: .75rem;
   color: var(--doux);
   white-space: nowrap;
   pointer-events: none;
 }
+/* Carte OpenStreetMap adoucie : couleurs désaturées et plus claires */
+.leaflet-tile-pane { filter: saturate(.3) brightness(1.06) contrast(.88); }
+.leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, .6) !important; }
 
-/* ---------- Épingles ---------- */
+/* ---------- Épingles : petits ronds ---------- */
 .epingle {
-  width: 36px; height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  background: var(--surface);
-  border: 2px solid var(--accent);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
 }
-.epingle span { transform: rotate(45deg); font-size: 17px; }
-.epingle.visite { border-color: var(--doux); opacity: .6; }
-/* Lieu que j'ai proposé, en attente de l'accord de l'autre : bord en pointillés */
-.epingle.attente { border-style: dashed; }
+.epingle.visite { background: #a3aaa7; }
+/* Lieu que j'ai proposé, en attente de l'accord de l'autre : rond en pointillés */
+.epingle.attente { background: var(--surface); border: 2px dashed var(--accent); }
+/* Épingle provisoire pendant un ajout */
+.epingle.temp { background: var(--coeur); box-shadow: 0 0 0 6px rgba(194, 90, 67, .2); }
 
-/* ---------- Liste ---------- */
+/* ---------- Filtres : sélecteur segmenté ---------- */
 .filtres {
   display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
+  padding: 3px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: #ebe6de;
 }
 .filtres button {
-  padding: 7px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--bord);
-  background: var(--surface);
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 9px;
   font-size: .9rem;
-}
-.filtres button.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-.liste h2 {
-  margin: 16px 0 6px;
-  font-size: .8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
   color: var(--doux);
 }
-.liste h2:not(:first-child) { margin-top: 24px; }
-.liste h3 { margin: 10px 0 6px; font-size: .95rem; font-weight: 600; }
-/* Pays qui a sa propre fiche : le sous-titre est cliquable */
-.liste h3.titre-pays { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.titre-pays.visite { opacity: .6; }
-.titre-pays[class*="saison-"] .titre-nom { color: var(--saison); }
+.filtres button.actif {
+  background: var(--surface);
+  color: var(--texte);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+/* ---------- Liste ---------- */
 /* Vue « Tous » : sections À visiter / Visités */
 .liste .section {
-  margin: 8px 0 0;
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--accent);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent);
+  margin: 4px 0 0;
+  font-family: var(--titre);
+  font-size: 1.35rem;
+  font-weight: 600;
 }
 .liste .section:not(:first-child) { margin-top: 36px; }
-.liste .section + h2 { margin-top: 12px; }
-.liste ul { margin: 0; padding: 0; list-style: none; }
+.liste .section + h2 { margin-top: 10px; }
 
+/* Continent */
+.liste h2 {
+  margin: 20px 0 4px;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--doux);
+}
+.liste h2:first-child { margin-top: 0; }
+/* Pays */
+.liste h3 { margin: 12px 0 8px; font-size: 1rem; font-weight: 600; }
+/* Pays qui a sa propre fiche : le sous-titre est cliquable */
+.liste h3.titre-pays { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.titre-pays.visite .titre-nom { color: var(--doux); }
+
+/* Lieux : un bloc blanc par pays, lignes séparées par un trait fin */
+.liste ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  overflow: hidden;
+}
 .lieu {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  border-radius: var(--rayon);
-  background: var(--surface);
-  border: 1px solid var(--bord);
+  padding: 13px 14px;
   cursor: pointer;
 }
-.lieu.visite { opacity: .6; }
-.lieu-emoji { font-size: 1.4rem; }
+.lieu + .lieu { border-top: 1px solid var(--trait); }
+.lieu:active { background: var(--fond); }
+.lieu-emoji { font-size: 1.05rem; width: 22px; text-align: center; }
 .lieu-texte { flex: 1; min-width: 0; }
 .lieu-texte strong, .lieu-texte small {
   display: block;
@@ -203,42 +247,70 @@ button { cursor: pointer; border: none; background: none; }
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.lieu-texte small { color: var(--doux); }
-.lieu-priorite { font-size: 1rem; }
+.lieu-texte strong { font-weight: 500; }
+.lieu-texte small { margin-top: 2px; color: var(--doux); font-size: .82rem; }
+.lieu.visite .lieu-texte strong { color: var(--doux); }
+.lieu.visite .lieu-emoji { opacity: .6; }
+.lieu-priorite { font-size: .9rem; }
 .lieu-attente {
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
-  border: 1px dashed var(--doux);
+  border: 1px dashed var(--bord);
   color: var(--doux);
-  font-size: .75rem;
+  font-size: .72rem;
   white-space: nowrap;
 }
 
+.vide { color: var(--doux); text-align: center; margin-top: 24px; }
+
 /* ---------- Bannière : proposition de l'autre ou refus ---------- */
 .banniere {
-  margin: 0 16px 10px;
-  padding: 12px 14px;
+  margin: 0 16px 12px;
+  padding: 14px 16px;
   border-radius: var(--rayon);
   background: var(--surface);
-  border: 2px solid var(--coeur);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  border-left: 3px solid var(--accent);
+  box-shadow: var(--ombre);
 }
-.banniere p { margin: 0 0 10px; font-weight: 600; }
+.banniere p { margin: 0 0 12px; font-weight: 600; line-height: 1.35; }
+.banniere .mot { margin-top: -6px; }
 .banniere-actions { display: flex; align-items: center; gap: 8px; }
-.banniere-actions button:not(.principal):not(.danger) {
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--bord);
+
+/* Petit mot joint à une proposition */
+.mot {
+  margin: 0;
+  font-family: var(--titre);
+  font-style: italic;
+  font-weight: 500 !important;
+  color: var(--doux);
 }
 
-.vide { color: var(--doux); text-align: center; margin-top: 24px; }
+/* ---------- Saisons : point de couleur ---------- */
+.saison-printemps { --saison: var(--printemps); }
+.saison-ete       { --saison: var(--ete); }
+.saison-automne   { --saison: var(--automne); }
+.saison-hiver     { --saison: var(--hiver); }
+
+.lieu[class*="saison-"] .lieu-texte strong::before,
+.titre-pays[class*="saison-"] .titre-nom::after,
+.saisons button::before {
+  content: "";
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--saison);
+  vertical-align: middle;
+}
+.lieu[class*="saison-"] .lieu-texte strong::before { margin: -2px 8px 0 0; }
+.titre-pays[class*="saison-"] .titre-nom::after { margin: -2px 0 0 8px; }
+.saisons button::before { margin: -2px 6px 0 0; }
 
 /* ---------- Fiche ---------- */
 .fond {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(0, 0, 0, .3);
+  background: rgba(29, 37, 34, .28);
 }
 .fiche {
   position: fixed;
@@ -246,25 +318,26 @@ button { cursor: pointer; border: none; background: none; }
   z-index: 2001;
   max-height: 88dvh;
   overflow-y: auto;
-  padding: 20px 16px calc(env(safe-area-inset-bottom) + 16px);
+  padding: 22px 18px calc(env(safe-area-inset-bottom) + 18px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   background: var(--surface);
-  border-radius: 20px 20px 0 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .08);
 }
 @media (min-width: 600px) {
   .fiche {
     left: 50%; bottom: auto; top: 50%;
-    width: 440px;
+    width: 460px;
     transform: translate(-50%, -50%);
-    border-radius: 20px;
+    border-radius: 22px;
   }
 }
 
 .fermer {
   position: absolute;
-  top: 12px; right: 12px;
+  top: 14px; right: 14px;
   width: 32px; height: 32px;
   border-radius: 50%;
   background: var(--fond);
@@ -272,109 +345,105 @@ button { cursor: pointer; border: none; background: none; }
 }
 .f-nom {
   margin-right: 40px;
-  padding: 4px 0;
+  padding: 2px 0;
   border: none;
-  font-size: 1.3rem;
+  font-family: var(--titre);
+  font-size: 1.6rem;
   font-weight: 600;
   outline: none;
 }
-.pays { margin: -8px 0 0; color: var(--doux); font-size: .9rem; }
+.pays { margin: -12px 0 0; color: var(--doux); font-size: .9rem; }
 
-.fiche label {
+.fiche label, .champ {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: .85rem;
+  gap: 6px;
+  font-size: .8rem;
+  font-weight: 500;
   color: var(--doux);
 }
 .fiche select, .fiche textarea, .fiche input[type="date"] {
-  padding: 10px;
+  padding: 11px 12px;
   border: 1px solid var(--bord);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--fond);
   color: var(--texte);
+  font-size: .95rem;
+  font-weight: 400;
+  outline: none;
 }
+.fiche select:focus, .fiche textarea:focus, .fiche input[type="date"]:focus { border-color: var(--accent); }
 .fiche textarea { resize: vertical; }
-.bloc-passe { display: flex; flex-direction: column; gap: 10px; }
+.fiche label.case {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-size: .95rem;
+  font-weight: 400;
+  color: var(--texte);
+}
+.bloc-passe { display: flex; flex-direction: column; gap: 16px; }
 .dates { display: flex; gap: 8px; }
+.dates label { flex: 1; min-width: 0; }
+.dates input { width: 100%; min-width: 0; }
+
+/* Choix compacts sur une ligne : saison, type de voyage */
+.saisons, .choix-groupe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.saisons button, .choix-groupe button {
+  padding: 9px 2px;
+  border-radius: 10px;
+  border: 1px solid var(--bord);
+  color: var(--texte);
+  font-size: .82rem;
+  white-space: nowrap;
+}
+.saisons button.actif, .choix-groupe button.actif {
+  border-color: var(--accent);
+  background: var(--accent-doux);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* Séjours d'un lieu visité et bouton « Y retourner » */
 .sejours { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .sejours li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px 6px 10px;
-  border-radius: 10px;
+  padding: 8px 4px 8px 12px;
+  border-radius: 12px;
   background: var(--fond);
   color: var(--texte);
-  font-size: .9rem;
+  font-size: .92rem;
+  font-weight: 400;
 }
 .sejours li button { padding: 2px 8px; color: var(--doux); }
-.retour { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-#f-retour {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-}
-.lien { color: var(--doux); text-decoration: underline; font-size: .85rem; }
-.dates label { flex: 1; min-width: 0; }
-.dates input { width: 100%; min-width: 0; }
-.fiche label.case { flex-direction: row; align-items: center; gap: 8px; color: var(--texte); }
-
-/* ---------- Saisons ---------- */
-.saison-printemps { --saison: var(--printemps); }
-.saison-ete       { --saison: var(--ete); }
-.saison-automne   { --saison: var(--automne); }
-.saison-hiver     { --saison: var(--hiver); }
-
-.champ { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--doux); }
-.saisons { display: flex; flex-wrap: wrap; gap: 6px; }
-.saisons button {
-  padding: 6px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--bord);
-  color: var(--saison);
-  font-size: .85rem;
-}
-.saisons button.actif { background: var(--saison); border-color: var(--saison); color: #fff; }
-
-.lieu[class*="saison-"] .lieu-texte strong { color: var(--saison); }
-.legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 4px; font-size: .8rem; }
-.legende span { color: var(--saison); }
+.retour { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#f-retour { color: var(--accent); border-color: var(--accent); }
 
 .info, .meta { color: var(--doux); font-size: .85rem; margin: 0; }
 
-.actions { display: flex; gap: 8px; margin-top: 4px; }
-.principal {
-  margin-left: auto;
-  padding: 10px 18px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
-.danger { color: #c0392b; padding: 10px 4px; }
+.actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 
-/* ---------- Choix de la personne ---------- */
+/* ---------- Choix de la personne, lien secret ---------- */
 .fond.plein { display: grid; place-items: center; z-index: 3000; }
 .boite {
-  padding: 24px;
-  border-radius: 20px;
+  padding: 26px;
+  border-radius: 22px;
   background: var(--surface);
   text-align: center;
+  box-shadow: var(--ombre);
 }
-.boite p { margin: 0 0 16px; font-weight: 600; }
+.boite p { margin: 0 0 18px; font-family: var(--titre); font-size: 1.2rem; font-weight: 600; }
 .choix-boutons { display: flex; gap: 10px; justify-content: center; }
 .choix-boutons .principal { margin: 0; }
 #espace-form { width: min(340px, calc(100vw - 32px)); }
 #espace-texte {
   width: 100%;
-  padding: 10px;
+  padding: 11px 12px;
   border: 1px solid var(--bord);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--fond);
 }
-#espace-form .erreur { margin: 8px 0 0; font-weight: 400; color: var(--coeur); }
+#espace-form .erreur { margin: 8px 0 0; font-family: inherit; font-size: .9rem; font-weight: 400; color: var(--coeur); }
 #espace-form .principal { margin-top: 14px; }
