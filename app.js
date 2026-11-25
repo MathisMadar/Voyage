@@ -46,14 +46,17 @@ const lieuxRef = ref(db, cheminLieux);
 const cheminAvis = `espaces/${ESPACE_ID}/avis`;
 
 /* ---------- Données de l'app ---------- */
+// Chaque catégorie a une fine icône au trait (tracés SVG 24×24, couleur donnée par le CSS)
 const CATEGORIES = {
-  ville:    { label: "Ville",          emoji: "🏙️" },
-  pays:     { label: "Pays ou région", emoji: "🗺️" },
-  nature:   { label: "Nature",         emoji: "🏔️" },
-  plage:    { label: "Plage, île",     emoji: "🏝️" },
-  monument: { label: "Monument, site", emoji: "🏛️" },
-  autre:    { label: "Autre",          emoji: "📍" },
+  ville:    { label: "Ville",          icone: '<path d="M3 21h18M5 21V7l7-3v17M12 21V10l7 3v8M8.5 9v.01M8.5 12.5v.01M8.5 16v.01M15.5 15v.01M15.5 18v.01"/>' },
+  pays:     { label: "Pays ou région", icone: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2ZM9 4v14M15 6v14"/>' },
+  nature:   { label: "Nature",         icone: '<path d="M3 20 9.5 9l4 6.5L16 12l5 8H3Z"/>' },
+  plage:    { label: "Plage, île",     icone: '<circle cx="16.5" cy="7" r="3"/><path d="M3 15.5c2 0 2-1.5 4.5-1.5s2.5 1.5 4.5 1.5 2.5-1.5 4.5-1.5 2.5 1.5 4.5 1.5M3 20c2 0 2-1.5 4.5-1.5S10 20 12 20s2.5-1.5 4.5-1.5S19 20 21 20"/>' },
+  monument: { label: "Monument, site", icone: '<path d="M3 9 12 4l9 5H3ZM5.5 9v9M10 9v9M14 9v9M18.5 9v9M3 21h18M4 18h16"/>' },
+  autre:    { label: "Autre",          icone: '<path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11Z"/><circle cx="12" cy="10" r="2.2"/>' },
 };
+const iconeCategorie = (cle) =>
+  `<svg class="icone" viewBox="0 0 24 24" aria-hidden="true">${(CATEGORIES[cle] || CATEGORIES.autre).icone}</svg>`;
 
 // Saison idéale : une seule par lieu, couleurs dans style.css (--printemps…)
 const SAISONS = {
@@ -187,7 +190,9 @@ function retirerTemp() {
 function cadrer() {
   const points = Object.values(lieux).filter((l) => !aDecider(l)).map((l) => [l.lat, l.lng]);
   if (points.length === 1) carte.setView(points[0], 6);
-  else if (points.length > 1) carte.fitBounds(points, { padding: [40, 40], maxZoom: 6 });
+  else if (points.length > 1) {
+    carte.fitBounds(points, { paddingTopLeft: [30, 80], paddingBottomRight: [30, 60], maxZoom: 6 });
+  }
 }
 
 /* Toucher la carte : on propose la ville la plus proche */
@@ -403,13 +408,13 @@ function remplirGroupes(conteneur, entrees, passe) {
   }
 }
 
-// Sous-titre cliquable pour un pays qui a sa propre fiche : drapeau, nom (couleur de la saison), emoji du type
+// Sous-titre cliquable pour un pays qui a sa propre fiche : drapeau, nom (point de saison), icône du type
 function titrePays(id, l, passe) {
   const attente = !passe && (enAttente(l) || retourEnAttente(l));
   const h3 = document.createElement("h3");
   h3.className = "titre-pays" + (passe ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
   h3.innerHTML = `<span class="titre-nom"></span>
-    <span>${CATEGORIES.pays.emoji}</span>
+    ${iconeCategorie("pays")}
     <span class="lieu-attente"${attente ? "" : " hidden"}></span>
     <span class="lieu-priorite"${badge(l, passe) ? "" : " hidden"}>${badge(l, passe)}</span>`;
   h3.querySelector(".titre-nom").textContent = avecDrapeau(l.codePays, l.nom);
@@ -422,11 +427,10 @@ function titrePays(id, l, passe) {
 }
 
 function elementLieu(id, l, passe) {
-  const cat = CATEGORIES[l.categorie] || CATEGORIES.autre;
   const attente = !passe && (enAttente(l) || retourEnAttente(l));
   const li = document.createElement("li");
   li.className = "lieu" + (passe ? " visite" : "") + (SAISONS[l.saison] ? ` saison-${l.saison}` : "");
-  li.innerHTML = `<span class="lieu-emoji">${cat.emoji}</span>
+  li.innerHTML = `<span class="lieu-icone">${iconeCategorie(l.categorie)}</span>
     <div class="lieu-texte"><strong></strong><small></small></div>
     <span class="lieu-attente"${attente ? "" : " hidden"}></span>
     <span class="lieu-priorite"${badge(l, passe) ? "" : " hidden"}>${badge(l, passe)}</span>`;
@@ -444,7 +448,7 @@ function elementLieu(id, l, passe) {
 
 /* ---------- Fiche d'un lieu ---------- */
 for (const [cle, c] of Object.entries(CATEGORIES)) {
-  $("f-categorie").add(new Option(`${c.emoji} ${c.label}`, cle));
+  $("f-categorie").add(new Option(c.label, cle));
 }
 
 // Boutons de saison dans la fiche (toucher à nouveau pour enlever)
