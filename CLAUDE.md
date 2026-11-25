@@ -23,7 +23,7 @@ Règles Realtime Database conseillées :
 ```
 
 ## Conventions
-Design sobre : une seule couleur forte (vert sapin `--accent`), épingles en petits ronds sans emoji, saison = petit point de couleur devant le nom, emojis seulement dans la liste. Boutons d'une seule famille : `.principal`, `.secondaire`, `.danger`, `.lien`.
+Design : cadre de l'app dans le vert du logo (`--vert`, #2f6f5e) avec titre « Voyage » et sous-titre « Mathis & Clara » en crème, carte arrondie posée dessus, liste sur une feuille crème (`--fond`) qui remonte avec coins arrondis. Une seule couleur forte (vert sapin `--accent`), épingles en petits ronds sans emoji, saison = petit point de couleur devant le nom, emojis seulement dans la liste. Boutons d'une seule famille : `.principal`, `.secondaire`, `.danger`, `.lien`.
 Interface et commentaires en français. Mobile d'abord (usage principal sur iPhone en PWA), la mise en page passe en deux colonnes au-dessus de 900px.
 Nominatim demande au plus une requête par seconde : ne pas lancer de recherche à chaque frappe, seulement à la validation.
 Quand on modifie un fichier de l'app, augmenter la version de `CACHE` dans `sw.js`.

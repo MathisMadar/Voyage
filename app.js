@@ -145,11 +145,19 @@ function majMoi() {
   $("btn-moi").title = PERSONNES[moi] ? `${PERSONNES[moi]} (changer de personne)` : "Qui es-tu ?";
 }
 $("btn-moi").onclick = choisirMoi;
+$("sous-titre").textContent = Object.values(PERSONNES).join(" & ");
 majMoi();
 if (!PERSONNES[moi]) choisirMoi();
 
 /* ---------- Carte ---------- */
-const carte = L.map("carte", { zoomControl: false, worldCopyJump: true }).setView([30, 10], 2);
+// Bornée aux pôles (pas de bande vide au-dessus ni en dessous) ; libre de tourner autour du monde
+const carte = L.map("carte", {
+  zoomControl: false,
+  worldCopyJump: true,
+  minZoom: 1,
+  maxBounds: [[-85, -540], [85, 540]],
+  maxBoundsViscosity: 1,
+}).setView([30, 10], 2);
 // Tuiles OpenStreetMap adoucies par un filtre de couleurs (voir .leaflet-tile-pane dans style.css)
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
