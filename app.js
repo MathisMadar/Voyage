@@ -153,13 +153,11 @@ majMoi();
 if (!PERSONNES[moi]) choisirMoi();
 
 /* ---------- Carte ---------- */
-// Bornée aux pôles (pas de bande vide au-dessus ni en dessous) ; libre de tourner autour du monde
+// Libre de tourner autour du monde ; en hauteur, voir garderLeMondeEnVue plus bas
 const carte = L.map("carte", {
   zoomControl: false,
   worldCopyJump: true,
   minZoom: 1,
-  maxBounds: [[-85, -540], [85, 540]],
-  maxBoundsViscosity: 1,
 }).setView([30, 10], 2);
 // Tuiles OpenStreetMap adoucies par un filtre de couleurs (voir .leaflet-tile-pane dans style.css)
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -194,6 +192,23 @@ function cadrer() {
     carte.fitBounds(points, { paddingTopLeft: [30, 80], paddingBottomRight: [30, 60], maxZoom: 6 });
   }
 }
+
+// En hauteur, on peut faire glisser le monde jusqu'à laisser une marge au-dessus du pôle Nord
+// (pour qu'il ne soit pas caché par la recherche) et au-dessus de la feuille en bas, pas plus loin.
+// Au-delà des pôles, on voit le fond de #carte, de la couleur de la mer.
+const MARGE_HAUT = 90; // barre de recherche + astuce
+const MARGE_BAS = 36;  // partie cachée par la feuille + un peu d'air
+function garderLeMondeEnVue() {
+  const hauteur = carte.getSize().y;
+  const haut = carte.project([85.05, 0]).y - MARGE_HAUT; // en pixels, au zoom actuel
+  const bas = carte.project([-85.05, 0]).y + MARGE_BAS;
+  const centre = carte.project(carte.getCenter());
+  const y = bas - haut <= hauteur
+    ? (haut + bas) / 2 // tout le monde tient : on le centre
+    : Math.min(Math.max(centre.y, haut + hauteur / 2), bas - hauteur / 2);
+  if (Math.abs(y - centre.y) > 1) carte.panTo(carte.unproject([centre.x, y]), { duration: .3 });
+}
+carte.on("moveend", garderLeMondeEnVue);
 
 /* Toucher la carte : on propose la ville la plus proche */
 carte.on("click", async (e) => {

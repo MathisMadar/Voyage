@@ -116,7 +116,7 @@ input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var
   flex: 1;
   overflow-y: auto;
   margin-top: -26px;
-  padding: 26px 16px calc(env(safe-area-inset-bottom) + 24px);
+  padding: 36px 16px calc(env(safe-area-inset-bottom) + 24px);
   background: var(--fond);
   border-radius: 26px 26px 0 0;
   box-shadow: 0 -6px 20px rgba(0, 0, 0, .12);
@@ -128,11 +128,12 @@ input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var
   flex: none;
   height: 0;
 }
+/* Zone de prise large : toute la largeur, du bas de la carte jusqu'au-dessus des filtres */
 .poignee::before {
   content: "";
   position: absolute;
-  top: -26px; left: 25%; right: 25%;
-  height: 26px;
+  top: -42px; left: 0; right: 0;
+  height: 52px;
   touch-action: none;
   cursor: grab;
 }
