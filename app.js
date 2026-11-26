@@ -706,6 +706,57 @@ for (const b of document.querySelectorAll("[data-filtre]")) {
   };
 }
 
+/* ---------- Poignée : la feuille monte ou descend un peu ---------- */
+// Hauteur de la carte en % de l'écran : plus de liste, normal, plus de carte.
+// Au lâcher, on s'aimante à la plus proche ; le choix est gardé sur l'appareil.
+const HAUTEURS_CARTE = [30, 44, 60];
+let hauteurCarte = 44;
+try { hauteurCarte = Number(localStorage.getItem("voyage-carte")) || 44; } catch { /* stockage indisponible */ }
+
+// Après un changement de taille, Leaflet recalcule la carte. Si elle devient plus haute que le monde
+// entier, la marge au-delà des pôles a la couleur de la mer (fond de #carte), donc ne se voit pas.
+const redimensionnerCarte = () => carte.invalidateSize({ pan: false });
+
+function placerFeuille(vh, anime) {
+  const zone = document.querySelector(".zone-carte");
+  zone.style.transition = anime ? "flex-basis .25s ease" : "none";
+  zone.style.flexBasis = `calc(${vh}vh + 26px)`;
+}
+if (hauteurCarte !== 44) placerFeuille(hauteurCarte, false);
+redimensionnerCarte();
+
+$("poignee").addEventListener("pointerdown", (e) => {
+  const poignee = $("poignee");
+  const depart = e.clientY;
+  const base = hauteurCarte;
+  let vh = base;
+  let image = 0;
+  poignee.setPointerCapture(e.pointerId);
+  poignee.classList.add("tiree");
+
+  const bouger = (ev) => {
+    const min = HAUTEURS_CARTE[0] - 4, max = HAUTEURS_CARTE[HAUTEURS_CARTE.length - 1] + 4;
+    vh = Math.min(max, Math.max(min, base + ((ev.clientY - depart) / innerHeight) * 100));
+    placerFeuille(vh, false);
+    // La carte se redessine au plus une fois par image
+    cancelAnimationFrame(image);
+    image = requestAnimationFrame(redimensionnerCarte);
+  };
+  const lacher = () => {
+    poignee.removeEventListener("pointermove", bouger);
+    poignee.removeEventListener("pointerup", lacher);
+    poignee.removeEventListener("pointercancel", lacher);
+    poignee.classList.remove("tiree");
+    hauteurCarte = HAUTEURS_CARTE.reduce((a, b) => (Math.abs(b - vh) < Math.abs(a - vh) ? b : a));
+    placerFeuille(hauteurCarte, true);
+    setTimeout(redimensionnerCarte, 260); // après l'animation
+    try { localStorage.setItem("voyage-carte", hauteurCarte); } catch { /* stockage indisponible */ }
+  };
+  poignee.addEventListener("pointermove", bouger);
+  poignee.addEventListener("pointerup", lacher);
+  poignee.addEventListener("pointercancel", lacher);
+});
+
 /* ---------- Bannière : propositions et refus ---------- */
 // Affiche d'abord les refus qui me concernent, puis les lieux que l'autre me propose, un à la fois
 function majBanniere() {
