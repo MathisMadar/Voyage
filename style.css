@@ -213,18 +213,24 @@ input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var
 .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, .6) !important; }
 
 /* ---------- Épingles : petits ronds ---------- */
+/* Taille du point selon le zoom (classe posée sur #carte par app.js) ; la zone de toucher
+   reste de 28px autour, le point est centré dedans */
+#carte { --epingle: 9px; --epingle-bord: 2px; }
+#carte.zoom-pays { --epingle: 12px; --epingle-bord: 2px; }
+#carte.zoom-ville { --epingle: 16px; --epingle-bord: 3px; }
 .epingle {
-  width: 18px; height: 18px;
+  width: var(--epingle); height: var(--epingle);
+  margin: calc((28px - var(--epingle)) / 2);
   border-radius: 50%;
   background: var(--accent);
-  border: 3px solid var(--surface);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+  border: var(--epingle-bord) solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
 }
-.epingle.visite { background: #a3aaa7; }
+.epingle.visite { background: #7f8784; }
 /* Lieu que j'ai proposé, en attente de l'accord de l'autre : rond en pointillés */
-.epingle.attente { background: var(--surface); border: 2px dashed var(--accent); }
+.epingle.attente { background: var(--surface); border: var(--epingle-bord) dashed var(--accent); }
 /* Épingle provisoire pendant un ajout */
-.epingle.temp { background: var(--coeur); box-shadow: 0 0 0 6px rgba(194, 90, 67, .2); }
+.epingle.temp { --epingle: 14px; background: var(--coeur); box-shadow: 0 0 0 6px rgba(194, 90, 67, .2); }
 
 /* ---------- Filtres : sélecteur segmenté ---------- */
 .filtres {

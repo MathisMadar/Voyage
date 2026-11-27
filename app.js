@@ -172,10 +172,19 @@ function icone(lieu, classe = "") {
   return L.divIcon({
     className: "",
     html: `<div class="epingle${etat}${attente} ${classe}"></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    iconSize: [28, 28], // zone de toucher ; le point visible est plus petit (voir .epingle)
+    iconAnchor: [14, 14],
   });
 }
+
+// Points petits quand on voit le monde, plus gros quand on zoome sur un pays ou une ville
+function majTailleEpingles() {
+  const z = carte.getZoom();
+  $("carte").classList.toggle("zoom-pays", z >= 4 && z < 7);
+  $("carte").classList.toggle("zoom-ville", z >= 7);
+}
+carte.on("zoomend", majTailleEpingles);
+majTailleEpingles();
 
 function montrerTemp(lat, lng) {
   retirerTemp();
