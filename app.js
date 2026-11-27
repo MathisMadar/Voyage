@@ -499,6 +499,9 @@ function majFormules() {
   for (const b of $("f-formules").children) b.classList.toggle("actif", b.dataset.formule === brouillon.formule);
 }
 
+// « 9–17 janvier 2027 », ou vide sans dates envisagées
+const datesEnvisagees = (l) => (l.envisageDebut ? formaterSejour({ debut: l.envisageDebut, fin: l.envisageFin }) : "");
+
 // « Mathis te propose un week-end à Paris · 12–14 décembre 2026 » (ou « veut visiter Paris avec toi »)
 function texteProposition(l) {
   const qui = PERSONNES[l.ajoutePar] || l.ajoutePar;
@@ -600,9 +603,10 @@ function majRetour() {
   const enregistreVisite = !!ficheId && !!lieux[ficheId]?.visite;
   $("f-retour-bloc").hidden = !enregistreVisite;
   $("f-retour").hidden = !!l.retour;
-  $("f-retour-info").textContent = l.retour === "oui" ? "🔁 On y retourne !"
-    : retourEnAttente(l) ? `🔁 Retour proposé, en attente de ${autre()}`
-    : retourADecider(l) ? `🔁 ${PERSONNES[l.retourPar]} propose d'y retourner`
+  const dates = datesEnvisagees(l) ? ` · ${datesEnvisagees(l)}` : "";
+  $("f-retour-info").textContent = l.retour === "oui" ? `🔁 On y retourne !${dates}`
+    : retourEnAttente(l) ? `🔁 Retour proposé, en attente de ${autre()}${dates}`
+    : retourADecider(l) ? `🔁 ${PERSONNES[l.retourPar]} propose d'y retourner${dates}`
     : "";
   // On peut annuler un retour accepté, ou sa propre proposition (l'autre répond avec la bannière)
   $("f-retour-annuler").hidden = !(l.retour === "oui" || retourEnAttente(l));
@@ -660,18 +664,24 @@ $("fiche").addEventListener("submit", async (e) => {
     // L'ancienne date au mois est gardée tant qu'aucune date exacte ne la remplace
     dateVisite: visite && !sejours.length ? brouillon.dateVisite || "" : null,
   };
-  // Projet (type de voyage, dates envisagées) : seulement pour un lieu à visiter
+  // Projet (type de voyage, dates envisagées) : pour un lieu à visiter, ou pour un retour prévu
+  // dans un lieu visité (gardé tel quel jusqu'à ce qu'on ajoute le séjour)
   const envisageDebut = $("f-env-debut").value;
   const envisageFin = envisageDebut ? $("f-env-fin").value || envisageDebut : "";
   if (!visite && envisageFin < envisageDebut) {
     alert("La date de fin envisagée est avant la date de début.");
     return;
   }
-  Object.assign(donnees, {
-    formule: visite ? null : brouillon.formule || null,
-    envisageDebut: visite ? null : envisageDebut || null,
-    envisageFin: visite ? null : envisageFin || null,
-  });
+  const retourPrevu = visite && !!brouillon.retour && !nouveauSejour;
+  if (!visite) {
+    Object.assign(donnees, {
+      formule: brouillon.formule || null,
+      envisageDebut: envisageDebut || null,
+      envisageFin: envisageFin || null,
+    });
+  } else if (!retourPrevu) {
+    Object.assign(donnees, { formule: null, envisageDebut: null, envisageFin: null });
+  }
   // Nouveau séjour ajouté (on y est retournés) ou plus visité : le retour prévu est terminé
   if (nouveauSejour || !visite) Object.assign(donnees, { retour: null, retourPar: null });
   if (!donnees.nom) return;
@@ -812,6 +822,7 @@ function afficherBanniere() {
   const estRetour = retourADecider(l);
   $("banniere-texte").textContent = estRetour
     ? `${PERSONNES[l.retourPar] || l.retourPar} veut retourner à ${l.nom} avec toi`
+      + (datesEnvisagees(l) ? ` · ${datesEnvisagees(l)}` : "")
     : texteProposition(l);
   $("banniere-mot").hidden = estRetour || !l.mot;
   $("banniere-mot").textContent = l.mot ? `« ${l.mot} »` : "";
