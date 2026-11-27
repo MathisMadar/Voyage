@@ -24,7 +24,8 @@
 
 * { box-sizing: border-box; }
 
-html, body { margin: 0; height: 100%; }
+/* La page elle-même ne défile ni ne bouge : seules la liste et la fiche défilent */
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 body {
   display: flex;
@@ -381,7 +382,10 @@ input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var
   left: 0; right: 0; bottom: 0;
   z-index: 2001;
   max-height: 88dvh;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain; /* le défilement ne passe pas à la page derrière */
+  touch-action: pan-y;          /* seulement de haut en bas, pas sur le côté */
   padding: 22px 18px calc(env(safe-area-inset-bottom) + 18px);
   display: flex;
   flex-direction: column;
@@ -427,6 +431,8 @@ input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var
   font-weight: 500;
   color: var(--doux);
 }
+/* Sur iPhone, un champ de date garde le style d'iOS et peut dépasser : on le retire */
+.fiche input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-height: 44px; }
 .fiche select, .fiche textarea, .fiche input[type="date"] {
   padding: 11px 12px;
   border: 1px solid var(--bord);

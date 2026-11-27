@@ -734,9 +734,11 @@ for (const b of document.querySelectorAll("[data-filtre]")) {
 /* ---------- Poignée : la feuille monte ou descend un peu ---------- */
 // Hauteur de la carte en % de l'écran : plus de liste, normal, plus de carte.
 // Au lâcher, on s'aimante à la plus proche ; le choix est gardé sur l'appareil.
-const HAUTEURS_CARTE = [30, 44, 60];
+const HAUTEURS_CARTE = [24, 44, 60];
 let hauteurCarte = 44;
 try { hauteurCarte = Number(localStorage.getItem("voyage-carte")) || 44; } catch { /* stockage indisponible */ }
+// Une hauteur gardée d'une ancienne version (ex. 30) va à la plus proche des hauteurs actuelles
+hauteurCarte = HAUTEURS_CARTE.reduce((a, b) => (Math.abs(b - hauteurCarte) < Math.abs(a - hauteurCarte) ? b : a));
 
 // Après un changement de taille, Leaflet recalcule la carte. Si elle devient plus haute que le monde
 // entier, la marge au-delà des pôles a la couleur de la mer (fond de #carte), donc ne se voit pas.
